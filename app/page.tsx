@@ -18,6 +18,9 @@ import {
 const whatsappUrl =
   'https://wa.me/5594991492417?text=Ol%C3%A1!%20Quero%20agendar%20um%20hor%C3%A1rio%20na%20Loucas%20Por%20Esmaltes.'
 
+const instagramUrl = 'https://www.instagram.com/loucasporesmaltesmaraba/'
+const mapsUrl = 'https://www.google.com/maps/search/?api=1&query=Av.+Castelo+Branco,+1887+-+Marab%C3%A1,+PA'
+
 type ServiceCategory = 'Todos' | 'Maos' | 'Pes' | 'Combos'
 
 interface ServiceItem {
@@ -150,10 +153,8 @@ export default function Page() {
     if (!touchStartX.current || !touchEndX.current) return
     const diff = touchStartX.current - touchEndX.current
     if (diff > 45) {
-      // Swiped left -> next
       next()
     } else if (diff < -45) {
-      // Swiped right -> prev
       prev()
     }
     touchStartX.current = 0
@@ -176,6 +177,9 @@ export default function Page() {
           <a href="#esmaltes">Esmaltes</a>
           <a href="#sobre">A loja</a>
           <a href="#contato">Contato</a>
+          <a href={instagramUrl} target="_blank" rel="noreferrer">
+            Instagram ↗
+          </a>
           <a className="nav-whatsapp" href={whatsappUrl} target="_blank" rel="noreferrer">
             Agendar ↗
           </a>
@@ -239,10 +243,16 @@ export default function Page() {
             <Sparkles size={16} />
             <span>Produtos de alta qualidade</span>
           </div>
-          <div className="intro-feat">
+          <a
+            className="intro-feat"
+            href={mapsUrl}
+            target="_blank"
+            rel="noreferrer"
+            title="Abrir endereço no Google Maps"
+          >
             <MapPin size={16} />
-            <span>Marabá, PA</span>
-          </div>
+            <span>Marabá, PA ↗</span>
+          </a>
         </div>
       </section>
 
@@ -403,7 +413,15 @@ export default function Page() {
         <div className="contact-details">
           <div>
             <MapPin size={17} />
-            <span>Av. Castelo Branco, nº 1887<br />Marabá, PA · 68501-700</span>
+            <a
+              href={mapsUrl}
+              target="_blank"
+              rel="noreferrer"
+              title="Abrir no Google Maps"
+              style={{ color: 'inherit', textDecoration: 'none' }}
+            >
+              Av. Castelo Branco, nº 1887<br />Marabá, PA · 68501-700 ↗
+            </a>
           </div>
           <div>
             <Phone size={17} />
@@ -426,14 +444,20 @@ export default function Page() {
               Venha nos visitar e sinta a diferença de um atendimento feito com carinho.
             </p>
             <div className="footer-social">
-              <a href="https://instagram.com" aria-label="Instagram" target="_blank" rel="noreferrer">
+              <a
+                href={instagramUrl}
+                aria-label="Instagram @loucasporesmaltesmaraba"
+                target="_blank"
+                rel="noreferrer"
+                title="Siga no Instagram"
+              >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
                   <circle cx="12" cy="12" r="4" />
                   <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
                 </svg>
               </a>
-              <a href={whatsappUrl} aria-label="WhatsApp" target="_blank" rel="noreferrer">
+              <a href={whatsappUrl} aria-label="WhatsApp" target="_blank" rel="noreferrer" title="Falar no WhatsApp">
                 <Phone size={16} />
               </a>
             </div>
@@ -446,16 +470,29 @@ export default function Page() {
               <li><a href="#esmaltes">Esmaltes</a></li>
               <li><a href="#sobre">A loja</a></li>
               <li><a href="#contato">Contato</a></li>
+              <li><a href={instagramUrl} target="_blank" rel="noreferrer">Instagram ↗</a></li>
               <li><a href={whatsappUrl} target="_blank" rel="noreferrer">Agendar horário</a></li>
             </ul>
           </div>
 
           <div className="footer-col">
-            <h4 className="footer-col-title">Contato</h4>
+            <h4 className="footer-col-title">Contato &amp; Localização</h4>
             <ul className="footer-contact-list">
               <li>
                 <MapPin size={13} />
-                <span>Av. Castelo Branco, nº 1887<br />Marabá, PA · 68501-700</span>
+                <a href={mapsUrl} target="_blank" rel="noreferrer" title="Ver no Google Maps">
+                  Av. Castelo Branco, nº 1887<br />Marabá, PA · 68501-700 ↗
+                </a>
+              </li>
+              <li>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+                  <circle cx="12" cy="12" r="4" />
+                  <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+                </svg>
+                <a href={instagramUrl} target="_blank" rel="noreferrer">
+                  @loucasporesmaltesmaraba ↗
+                </a>
               </li>
               <li>
                 <Phone size={13} />
