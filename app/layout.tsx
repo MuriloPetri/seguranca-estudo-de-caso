@@ -3,31 +3,23 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Louças Por Esmaltes | Marabá',
+  title: 'Loucas Por Esmaltes | Marabá',
   description: 'Esmaltes, manicure e pedicure em Marabá, PA.',
-  generator: 'v0.app',
   icons: {
     icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
       {
         url: '/icon.svg',
         type: 'image/svg+xml',
       },
     ],
-    apple: '/apple-icon.png',
+    shortcut: '/icon.svg',
+    apple: '/icon.svg',
   },
 }
 
 export const viewport: Viewport = {
   colorScheme: 'light',
-  themeColor: '#fffafc',
+  themeColor: '#4e0d3a',
 }
 
 export default function RootLayout({
@@ -38,6 +30,8 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <head>
+        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/icon.svg" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

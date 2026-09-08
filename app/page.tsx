@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 
 const whatsappUrl =
-  'https://wa.me/5594991492417?text=Ol%C3%A1!%20Quero%20agendar%20um%20hor%C3%A1rio%20na%20Lou%C3%A7as%20Por%20Esmaltes.'
+  'https://wa.me/5594991492417?text=Ol%C3%A1!%20Quero%20agendar%20um%20hor%C3%A1rio%20na%20Loucas%20Por%20Esmaltes.'
 
 type ServiceCategory = 'Todos' | 'Maos' | 'Pes' | 'Combos'
 
@@ -164,8 +164,8 @@ export default function Page() {
     <main className="site-shell">
       {/* ── HEADER ─────────────────────────────────────────── */}
       <header className={headerScrolled ? 'site-header scrolled' : 'site-header'}>
-        <a href="#inicio" className="brand" aria-label="Louças Por Esmaltes">
-          <span>Louças Por Esmaltes</span>
+        <a href="#inicio" className="brand" aria-label="Loucas Por Esmaltes">
+          <span>Loucas Por Esmaltes</span>
         </a>
         <nav
           className={menuOpen ? 'main-nav open' : 'main-nav'}
@@ -225,7 +225,7 @@ export default function Page() {
       {/* ── INTRO STRIP ────────────────────────────────────── */}
       <section className="intro-strip" id="sobre">
         <div className="intro-left">
-          <p className="section-kicker">Louças Por Esmaltes · Marabá, PA</p>
+          <p className="section-kicker">Loucas Por Esmaltes · Marabá, PA</p>
           <p className="intro-statement">
             Um espaço para escolher sua próxima cor, cuidar de si e sair se sentindo ainda mais você.
           </p>
@@ -420,7 +420,7 @@ export default function Page() {
       <footer className="site-footer">
         <div className="footer-inner">
           <div className="footer-col footer-col-brand">
-            <a href="#inicio" className="footer-logo-text">Louças Por Esmaltes</a>
+            <a href="#inicio" className="footer-logo-text">Loucas Por Esmaltes</a>
             <p className="footer-about">
               Espaço especializado em cuidados para mãos e pés em Marabá, PA.
               Venha nos visitar e sinta a diferença de um atendimento feito com carinho.
@@ -481,7 +481,7 @@ export default function Page() {
         </div>
 
         <div className="footer-bottom">
-          <p>&copy; {new Date().getFullYear()} Louças Por Esmaltes · Marabá, PA. Todos os direitos reservados.</p>
+          <p>&copy; {new Date().getFullYear()} Loucas Por Esmaltes · Marabá, PA. Todos os direitos reservados.</p>
           <p className="footer-tagline">Cor, cuidado e um tempo só seu.</p>
         </div>
       </footer>

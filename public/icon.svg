@@ -1,26 +1,81 @@
-<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <style>
-    @media (prefers-color-scheme: light) {
-      .background { fill: black; }
-      .foreground { fill: white; }
-    }
-    @media (prefers-color-scheme: dark) {
-      .background { fill: white; }
-      .foreground { fill: black; }
-    }
-  </style>
-  <g clip-path="url(#clip0_7960_43945)">
-    <rect class="background" width="180" height="180" rx="37" />
-    <g style="transform: scale(95%); transform-origin: center">
-      <path class="foreground"
-        d="M101.141 53H136.632C151.023 53 162.689 64.6662 162.689 79.0573V112.904H148.112V79.0573C148.112 78.7105 148.098 78.3662 148.072 78.0251L112.581 112.898C112.701 112.902 112.821 112.904 112.941 112.904H148.112V126.672H112.941C98.5504 126.672 86.5638 114.891 86.5638 100.5V66.7434H101.141V100.5C101.141 101.15 101.191 101.792 101.289 102.422L137.56 66.7816C137.255 66.7563 136.945 66.7434 136.632 66.7434H101.141V53Z" />
-      <path class="foreground"
-        d="M65.2926 124.136L14 66.7372H34.6355L64.7495 100.436V66.7372H80.1365V118.47C80.1365 126.278 70.4953 129.958 65.2926 124.136Z" />
-    </g>
-  </g>
+<svg width="180" height="180" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <clipPath id="clip0_7960_43945">
-      <rect width="180" height="180" fill="white" />
-    </clipPath>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#4e0d3a" />
+      <stop offset="100%" stop-color="#26041d" />
+    </linearGradient>
+
+    <!-- Gold Cap Gradient -->
+    <linearGradient id="capGrad" x1="56" y1="26" x2="72" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#faecc8" />
+      <stop offset="45%" stop-color="#dfad57" />
+      <stop offset="100%" stop-color="#9a6e29" />
+    </linearGradient>
+
+    <!-- Lacquer Fill Gradient -->
+    <linearGradient id="lacquerGrad" x1="41" y1="58" x2="87" y2="104" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f03893" />
+      <stop offset="50%" stop-color="#c51c86" />
+      <stop offset="100%" stop-color="#7d0b51" />
+    </linearGradient>
+
+    <!-- Glass Reflection Gradient -->
+    <linearGradient id="sheenGrad" x1="43" y1="62" x2="48" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.6" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.1" />
+    </linearGradient>
+
+    <!-- Drop Shadow Filter -->
+    <filter id="shadow" x="25" y="16" width="78" height="98" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000000" flood-opacity="0.5" />
+    </filter>
   </defs>
+
+  <!-- Squircle Base with Soft Luxury Border -->
+  <rect width="128" height="128" rx="30" fill="url(#bgGrad)" />
+  <rect x="1" y="1" width="126" height="126" rx="29" stroke="rgba(255,255,255,0.16)" stroke-width="1.5" />
+
+  <!-- Bottle Group with Shadow -->
+  <g filter="url(#shadow)">
+    <!-- Brush Cap / Handle (Champagne Gold) -->
+    <rect x="56" y="24" width="16" height="34" rx="3" fill="url(#capGrad)" />
+    <!-- Cap Neck Ring -->
+    <rect x="54" y="54" width="20" height="4.5" rx="1.5" fill="#fdf0d5" />
+
+    <!-- Bottle Body (Glass with Esmalte) -->
+    <path
+      d="M45 58.5 C45 58.5 41 58.5 41 64 L41 93 C41 102 48 105 57 105 L71 105 C80 105 87 102 87 93 L87 64 C87 58.5 83 58.5 83 58.5 Z"
+      fill="url(#lacquerGrad)"
+    />
+
+    <!-- Inner Polish Liquid Level Curve -->
+    <path
+      d="M43 70 Q64 74 85 70 L85 92 C85 100 79 103 71 103 L57 103 C49 103 43 100 43 92 Z"
+      fill="#a01267"
+      opacity="0.35"
+    />
+
+    <!-- Glass Highlights / Sheen Reflection -->
+    <path
+      d="M45 64 Q44 64 44 68 L44 93 Q44 98 47 99 Q46 96 46 93 L46 68 Q46 64 45 64 Z"
+      fill="url(#sheenGrad)"
+    />
+    <ellipse cx="79" cy="66" rx="2" ry="4" fill="#ffffff" opacity="0.45" transform="rotate(-15 79 66)" />
+  </g>
+
+  <!-- Big Sparkle on Cap Shoulder -->
+  <path
+    d="M93 25 Q93 36 82 36 Q93 36 93 47 Q93 36 104 36 Q93 36 93 25 Z"
+    fill="#ffffff"
+  />
+  <circle cx="93" cy="36" r="1.8" fill="#ffe082" />
+
+  <!-- Secondary Tiny Sparkle -->
+  <path
+    d="M36 42 Q36 48 30 48 Q36 48 36 54 Q36 48 42 48 Q36 48 36 42 Z"
+    fill="#ffb3dd"
+    opacity="0.85"
+  />
+  <circle cx="103" cy="52" r="1.5" fill="#ffffff" opacity="0.75" />
 </svg>
