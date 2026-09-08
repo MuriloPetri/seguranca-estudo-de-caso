@@ -205,7 +205,7 @@ export default function Page() {
         <div className="hero-overlay" />
         <div className="hero-content">
           <div className="hero-badge">
-            <Sparkles size={11} />
+
             <span>Beleza que começa nos detalhes</span>
           </div>
           <h1>
@@ -398,10 +398,10 @@ export default function Page() {
       {/* ── CONTATO & LOCALIZAÇÃO ───────────────────────────── */}
       <section className="contact-section" id="contato">
         <div className="contact-glow" />
-        
+
         <div className="contact-content">
           <p className="eyebrow light">
-            <Sparkles size={12} /> Vamos marcar seu momento?
+            Vamos marcar seu momento?
           </p>
           <h2>
             Agende seu horário<br />
