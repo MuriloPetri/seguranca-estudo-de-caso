@@ -395,9 +395,10 @@ export default function Page() {
         </div>
       </section>
 
-      {/* ── CONTATO ────────────────────────────────────────── */}
+      {/* ── CONTATO & LOCALIZAÇÃO ───────────────────────────── */}
       <section className="contact-section" id="contato">
         <div className="contact-glow" />
+        
         <div className="contact-content">
           <p className="eyebrow light">
             <Sparkles size={12} /> Vamos marcar seu momento?
@@ -406,30 +407,66 @@ export default function Page() {
             Agende seu horário<br />
             <em>pelo WhatsApp.</em>
           </h2>
+          <p className="contact-desc">
+            Venha conhecer nosso espaço em Marabá, escolher suas cores favoritas e viver uma experiência completa de cuidado e beleza.
+          </p>
           <a className="btn btn-light" href={whatsappUrl} target="_blank" rel="noreferrer">
             Chamar no WhatsApp <ArrowUpRight size={16} />
           </a>
         </div>
-        <div className="contact-details">
-          <div>
-            <MapPin size={17} />
+
+        {/* Card Interativo com Mapa e Informações (Conforme solicitado) */}
+        <div className="location-card">
+          <div className="map-frame">
+            <iframe
+              title="Mapa Loucas Por Esmaltes Marabá"
+              src="https://maps.google.com/maps?q=Av.+Castelo+Branco,+1887+-+Marab%C3%A1,+PA&t=&z=15&ie=UTF8&iwloc=&output=embed"
+              width="100%"
+              height="100%"
+              style={{ border: 0 }}
+              allowFullScreen={false}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          </div>
+
+          <div className="location-card-body">
+            <h3 className="location-card-title">Loucas Por Esmaltes — Marabá</h3>
+
+            <div className="location-item">
+              <div className="loc-icon-circle">
+                <MapPin size={18} />
+              </div>
+              <div className="loc-text">
+                <span className="loc-label">Endereço</span>
+                <p className="loc-value">
+                  Av. Castelo Branco, nº 1887<br />
+                  Marabá — PA · 68501-700
+                </p>
+              </div>
+            </div>
+
+            <div className="location-item">
+              <div className="loc-icon-circle">
+                <Phone size={18} />
+              </div>
+              <div className="loc-text">
+                <span className="loc-label">WhatsApp</span>
+                <a className="loc-value loc-link" href={whatsappUrl} target="_blank" rel="noreferrer">
+                  (94) 99149-2417
+                </a>
+              </div>
+            </div>
+
             <a
+              className="location-map-btn"
               href={mapsUrl}
               target="_blank"
               rel="noreferrer"
-              title="Abrir no Google Maps"
-              style={{ color: 'inherit', textDecoration: 'none' }}
             >
-              Av. Castelo Branco, nº 1887<br />Marabá, PA · 68501-700 ↗
+              <ArrowUpRight size={16} />
+              <span>Ver no Google Maps</span>
             </a>
-          </div>
-          <div>
-            <Phone size={17} />
-            <a href={whatsappUrl} target="_blank" rel="noreferrer">(94) 99149-2417</a>
-          </div>
-          <div>
-            <Clock3 size={17} />
-            <span>Consulte horários pelo WhatsApp</span>
           </div>
         </div>
       </section>
