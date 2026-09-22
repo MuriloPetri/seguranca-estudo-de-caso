@@ -37,10 +37,10 @@ function RevealSection({ children, delay = 0, className = '' }: { children: Reac
 }
 
 const MEMBERS = [
-  { name: 'Membro 1', ra: 'RA: XXXXXXX' },
-  { name: 'Membro 2', ra: 'RA: XXXXXXX' },
-  { name: 'Membro 3', ra: 'RA: XXXXXXX' },
-  { name: 'Membro 4', ra: 'RA: XXXXXXX' },
+  { name: 'Murilo Petri', ra: '' },
+  { name: 'Enzo Gabriel', ra: '' },
+  { name: 'Kayo Raphael', ra: '' },
+  { name: 'Deivid Silva', ra: '' },
 ]
 
 const SECTIONS = [
