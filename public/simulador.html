@@ -1,0 +1,1878 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sala de Casos — Simulador de Confidencialidade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#12192a; --ink-2:#19233a; --ink-3:#212e4a; --line:#2e3c5c;
+    --paper:#f5f2e9; --text-light:#e7ecf5; --text-dim:#8f9ab3;
+    --danger:#ff7a68; --danger-deep:#8a3a2e;
+    --safe:#5fd897; --safe-deep:#1f6b47;
+    --warn:#ffb454; --warn-deep:#8a5a1e;
+    --human:#e0a06a; --tech:#7cb8e8;
+    --lvl1:#5fd897; --lvl2:#ffb454; --lvl3:#e07a9e;
+    --term-bg:#0a0e18; --term-fg:#7ee08a;
+    --serif:"Fraunces","Iowan Old Style","Palatino Linotype","Georgia",serif;
+    --sans:"Inter",-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:"SFMono-Regular",Consolas,"Liberation Mono",monospace;
+    --r-sm:10px; --r-md:16px; --r-lg:22px; --r-pill:999px;
+    --glass:rgba(25,35,58,.6); --glass-brd:rgba(255,255,255,.09);
+    --shadow:0 1px 2px rgba(0,0,0,.35), 0 24px 48px -18px rgba(0,0,0,.55);
+    --grad-warm:linear-gradient(135deg,#ffcf86,#ff8a6a 60%,#e0648a);
+    --grad-cool:linear-gradient(135deg,#8fd8c4,#6fa8e0);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--ink); color:var(--text-light); font-family:var(--sans); line-height:1.6; -webkit-font-smoothing:antialiased; overflow-x:hidden;}
+  ::selection{background:rgba(255,180,84,.32); color:#fff;}
+  .shell{max-width:1080px; margin:0 auto; padding:0 20px 100px; position:relative;}
+
+  .blob{position:fixed; z-index:0; border-radius:50%; filter:blur(90px); pointer-events:none; opacity:.32;}
+  .blob-a{width:480px; height:480px; top:-180px; left:-120px; background:radial-gradient(circle, #ff8a6a, transparent 70%); animation:drift1 22s ease-in-out infinite alternate;}
+  .blob-b{width:420px; height:420px; top:120px; right:-160px; background:radial-gradient(circle, #6fa8e0, transparent 70%); animation:drift2 26s ease-in-out infinite alternate;}
+  .blob-c{width:380px; height:380px; bottom:-140px; left:30%; background:radial-gradient(circle, #5fd897, transparent 70%); animation:drift1 30s ease-in-out infinite alternate-reverse;}
+  @keyframes drift1{from{transform:translate(0,0) scale(1);} to{transform:translate(40px,30px) scale(1.08);}}
+  @keyframes drift2{from{transform:translate(0,0) scale(1);} to{transform:translate(-30px,40px) scale(1.05);}}
+  @media(prefers-reduced-motion:reduce){ .blob{animation:none;} }
+
+  .topbar{display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border:1px solid var(--glass-brd); flex-wrap:wrap; gap:10px; position:sticky; top:14px; z-index:30; background:var(--glass); backdrop-filter:blur(18px) saturate(140%); -webkit-backdrop-filter:blur(18px) saturate(140%); border-radius:var(--r-lg); box-shadow:var(--shadow); margin-top:20px;}
+  .topbar .brand{font-family:var(--serif); font-size:1.4rem; font-weight:600; display:flex; align-items:center; gap:10px;}
+  .brand-mark{width:34px; height:34px; border-radius:10px; background:var(--grad-warm); display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 4px 14px rgba(255,138,106,.35);}
+  .brand-mark svg{width:18px; height:18px; stroke:#1a1408;}
+  .topbar .brand small{display:block; font-family:var(--sans); font-size:.68rem; color:var(--text-dim); font-weight:600; margin-top:2px; letter-spacing:.4px;}
+  .topbar .status{font-size:.78rem; color:var(--text-dim); text-align:right;}
+  .topbar .status b{color:var(--warn);}
+
+  .tabs{display:flex; flex-wrap:wrap; gap:6px; margin:16px 0 30px; padding:6px; background:var(--glass); border:1px solid var(--glass-brd); border-radius:var(--r-pill); backdrop-filter:blur(14px); box-shadow:var(--shadow); position:sticky; top:96px; z-index:20;}
+  .tab{display:flex; align-items:center; gap:7px; padding:9px 16px; background:transparent; border:none; border-radius:var(--r-pill); font-size:.83rem; font-weight:500; cursor:pointer; color:var(--text-dim); user-select:none; transition:.2s ease;}
+  .tab svg{width:15px; height:15px; stroke:currentColor; flex-shrink:0;}
+  .tab .n{display:none;}
+  .tab:hover{color:var(--text-light); background:rgba(255,255,255,.05);}
+  .tab.active{background:var(--grad-warm); color:#231506; font-weight:700; box-shadow:0 6px 18px rgba(255,138,106,.3);}
+
+  section.panel{display:none; position:relative; z-index:1;}
+  section.panel.active{display:block; animation:rise .4s cubic-bezier(.22,.9,.35,1);}
+  @keyframes rise{from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);}}
+  ::view-transition-old(root), ::view-transition-new(root){animation-duration:.32s;}
+
+  h1.case{font-family:var(--serif); font-size:2.1rem; margin:0 0 6px; font-weight:600; letter-spacing:-0.015em; font-optical-sizing:auto;}
+  .case-eyebrow{color:var(--warn); font-size:.78rem; font-weight:600; margin-bottom:8px;}
+  p.lede{color:var(--text-dim); max-width:680px; margin:0 0 30px; font-size:1rem;}
+
+  .card{background:var(--glass); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border:1px solid var(--glass-brd); border-radius:var(--r-lg); padding:24px; margin-bottom:18px; box-shadow:var(--shadow);}
+  .card h3{margin-top:0; font-family:var(--serif); font-size:1.2rem; font-weight:600;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr;}}
+
+  .pill{display:inline-block; padding:3px 10px; border-radius:20px; font-size:.66rem; font-weight:700; letter-spacing:.3px; border:1px solid var(--line);}
+  .pill.human{color:var(--human); border-color:#5c452a; background:rgba(201,145,92,.1);}
+  .pill.tech{color:var(--tech); border-color:#2e4a63; background:rgba(111,160,201,.1);}
+  .pill.lvl1{color:var(--lvl1); border-color:#2f5c3a; background:rgba(111,174,122,.1);}
+  .pill.lvl2{color:var(--lvl2); border-color:var(--warn-deep); background:rgba(217,165,88,.1);}
+  .pill.lvl3{color:var(--lvl3); border-color:#6b3546; background:rgba(176,106,130,.1);}
+  .pill.attacker{color:#c98a9e; border-color:#6b3d4a; background:rgba(201,138,158,.12);}
+  .perspective-banner{background:rgba(201,138,158,.1); border:1px solid #6b3d4a; color:#e6ccd6; font-size:.8rem; padding:9px 14px; border-radius:4px; margin-bottom:16px;}
+
+  /* ===== BUILDER WIDGET ===== */
+  .builder-group{margin-bottom:18px;}
+  .builder-group h5{font-family:var(--serif); font-size:1rem; margin:0 0 8px; color:var(--text-light);}
+  .builder-opt{display:block; width:100%; text-align:left; padding:12px 16px; margin-bottom:6px; background:var(--glass); backdrop-filter:blur(10px); border:1px solid var(--glass-brd); border-radius:var(--r-md); color:var(--text-light); cursor:pointer; font-size:.85rem;}
+  .builder-opt:hover{border-color:rgba(255,255,255,.24);}
+  .builder-opt.sel{border-color:var(--warn); background:var(--ink-3);}
+  .builder-opt .note{display:block; font-size:.72rem; color:var(--text-dim); margin-top:4px;}
+  .builder-submit{margin-top:8px;}
+
+  /* ===== OSINT WIDGET ===== */
+  .osint-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;}
+  @media(max-width:720px){.osint-grid{grid-template-columns:1fr;}}
+  .osint-card{background:var(--paper); color:#20242c; border-radius:5px; padding:14px; cursor:pointer; border:2px solid transparent;}
+  .osint-card:hover{border-color:#cfc7ab;}
+  .osint-card.sel{border-color:var(--warn);}
+  .osint-card h5{margin:0 0 6px; font-family:var(--serif); font-size:.95rem;}
+  .osint-card p{margin:0; font-size:.8rem; color:#4a4638;}
+  .dossie{background:var(--ink-2); border:1px solid var(--line); border-radius:4px; padding:12px 14px; font-size:.82rem; color:var(--text-dim); margin-bottom:14px;}
+  .dossie b{color:var(--text-light);}
+
+  /* ===== SOC DASHBOARD ===== */
+  .soc-progress{font-size:.78rem; color:var(--text-dim); margin-bottom:10px;}
+  .soc-card{background:var(--glass); backdrop-filter:blur(16px); border:1px solid var(--glass-brd); border-radius:var(--r-lg); padding:24px; margin-bottom:16px; box-shadow:var(--shadow);}
+  .soc-meta{font-size:.76rem; color:var(--text-dim); margin-bottom:10px; letter-spacing:.3px; text-transform:uppercase;}
+  .soc-desc{font-size:.95rem; margin-bottom:6px;}
+  .soc-actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:16px;}
+  .soc-feedback{margin-top:16px; padding:12px 14px; border-radius:4px; font-size:.86rem;}
+  .soc-feedback.correct{background:rgba(111,174,122,.12); border:1px solid var(--safe-deep);}
+  .soc-feedback.wrong{background:rgba(217,105,90,.12); border:1px solid var(--danger-deep);}
+  .soc-feedback b{display:block; margin-bottom:4px; font-size:.75rem; letter-spacing:.3px; text-transform:uppercase;}
+  .soc-summary{text-align:center; padding:30px 20px;}
+  .soc-summary .num{font-family:var(--serif); font-size:2.6rem; color:var(--warn);}
+  .soc-log{text-align:left; margin-top:20px; font-size:.82rem; color:var(--text-dim);}
+  .soc-log .item{padding:8px 0; border-bottom:1px solid var(--line);}
+
+  /* ===== PASSWORD TOOL ===== */
+  .pw-tool input{width:100%; padding:10px 12px; border-radius:4px; border:1px solid var(--line); background:var(--ink); color:var(--text-light); font-family:var(--mono); font-size:.9rem; margin-bottom:10px;}
+  .pw-bar{height:8px; border-radius:4px; background:var(--ink-3); overflow:hidden; margin-bottom:8px;}
+  .pw-bar .fill{height:100%; width:0%; background:var(--danger); transition:width .2s, background .2s;}
+  .pw-result{font-size:.85rem; color:var(--text-dim);}
+  .pw-result b{color:var(--text-light);}
+
+  /* ===== VISUAL POLISH ===== */
+  body{background:radial-gradient(ellipse 1200px 700px at 15% -10%, #1e2c3d 0%, var(--ink) 55%), radial-gradient(ellipse 900px 600px at 100% 0%, #1b2634 0%, var(--ink) 60%);}
+  body::before{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.05; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .shell{position:relative; z-index:1;}
+  h1,h2,h3,h4,h5,h6{font-optical-sizing:auto;}
+  .card, .scenario-card, .dash-card, .listing-card, .soc-card{transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; box-shadow:0 1px 2px rgba(0,0,0,.25), 0 10px 28px rgba(0,0,0,.16);}
+  .scenario-card:hover{transform:translateY(-4px); box-shadow:0 26px 50px -16px rgba(0,0,0,.6); border-color:rgba(255,255,255,.18);}
+  .card:hover{border-color:rgba(255,255,255,.16);}
+  .btn{transition: transform .12s ease, border-color .15s ease, background .15s ease;}
+  .btn:active{transform:scale(.97);}
+  .choice-btn{transition: transform .12s ease, border-color .15s ease, background .15s ease;}
+  .choice-btn:hover{transform:translateX(3px);}
+  .tab{transition: background .15s ease, border-color .15s ease, color .15s ease, transform .12s ease;}
+  .tab:hover{transform:translateY(-1px);}
+
+  /* ===== PROGRESS DASHBOARD ===== */
+  .dash-card{background:var(--glass); backdrop-filter:blur(16px); border:1px solid var(--glass-brd); border-radius:var(--r-lg); padding:22px 24px; margin-bottom:22px; box-shadow:var(--shadow);}
+  .dash-top{display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:8px;}
+  .dash-title{font-family:var(--serif); font-size:1.1rem;}
+  .dash-badge{font-size:.7rem; font-weight:700; letter-spacing:.4px; padding:4px 12px; border-radius:20px; background:rgba(217,165,88,.14); border:1px solid var(--warn-deep); color:var(--warn);}
+  .dash-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:18px;}
+  @media(max-width:720px){.dash-grid{grid-template-columns:1fr;}}
+  .dash-label{font-size:.76rem; color:var(--text-dim); margin-bottom:6px;}
+  .dash-bar{height:6px; border-radius:4px; background:var(--line); overflow:hidden; margin-bottom:6px;}
+  .dash-fill{height:100%; width:0%; background:linear-gradient(90deg, var(--warn), var(--lvl1)); transition:width .5s ease;}
+  .dash-num{font-size:.8rem; color:var(--text-light); font-weight:600;}
+
+  /* ===== URL INSPECTOR ===== */
+  .url-tool input{width:100%; padding:10px 12px; border-radius:4px; border:1px solid var(--line); background:var(--ink); color:var(--text-light); font-family:var(--mono); font-size:.85rem; margin-bottom:10px;}
+  .url-result{font-size:.85rem; color:var(--text-dim); line-height:1.7;}
+  .url-result .dom{color:var(--danger); font-weight:700; background:rgba(217,105,90,.14); padding:1px 4px; border-radius:3px;}
+  .url-result .sub{color:var(--text-dim);}
+
+  /* ===== MATCHING GAME ===== */
+  .match-status{font-size:.8rem; color:var(--warn); margin-bottom:12px; font-weight:600;}
+  .match-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px 16px;}
+  @media(max-width:720px){.match-grid{grid-template-columns:1fr;}}
+  .match-card{padding:13px 15px; background:var(--glass); backdrop-filter:blur(10px); border:1px solid var(--glass-brd); border-radius:var(--r-md); font-size:.85rem; cursor:pointer; text-align:left;}
+  .match-card:hover{border-color:var(--warn);}
+  .match-card.picked{border-color:var(--warn); background:var(--ink-3);}
+  .match-card.solved{border-color:var(--safe-deep); background:rgba(111,174,122,.12); color:var(--safe); cursor:default;}
+  .match-card.shake{animation:shake .3s;}
+  @keyframes shake{25%{transform:translateX(-4px);}75%{transform:translateX(4px);}}
+
+  /* ===== FINAL SUMMARY / CERTIFICATE ===== */
+  .certificate{background:var(--paper); color:#20242c; border-radius:6px; padding:30px; margin-top:24px; text-align:center;}
+  .certificate .cert-eyebrow{font-size:.7rem; letter-spacing:2px; color:#8a8471; font-weight:700; margin-bottom:10px;}
+  .certificate h2{font-family:var(--serif); margin:0 0 6px;}
+  .certificate .cert-stats{display:flex; justify-content:center; gap:28px; margin:20px 0; flex-wrap:wrap;}
+  .certificate .cstat{text-align:center;}
+  .certificate .cstat .n{font-family:var(--serif); font-size:1.7rem; display:block;}
+  .certificate .cstat .l{font-size:.72rem; color:#7a745f;}
+  @media print{
+    .topbar, .tabs, .no-print, footer.end{display:none !important;}
+    body{background:#fff; color:#000;}
+    .certificate{border:1px solid #ccc;}
+  }
+
+  /* ===== DECISION CURVE CHART ===== */
+  .chart-card{background:var(--glass); backdrop-filter:blur(16px); border:1px solid var(--glass-brd); border-radius:var(--r-lg); padding:24px; box-shadow:var(--shadow);}
+  .chart-legend{display:flex; gap:18px; flex-wrap:wrap; margin:4px 0 16px; font-size:.78rem; color:var(--text-dim);}
+  .chart-legend span.dot{display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:6px; vertical-align:middle;}
+  .chart-svg{width:100%; height:auto; display:block;}
+  .chart-empty{color:var(--text-dim); font-size:.9rem; padding:40px 10px; text-align:center;}
+  .chart-stats{display:flex; gap:24px; flex-wrap:wrap; margin-top:16px; font-size:.82rem; color:var(--text-dim);}
+  .chart-stats b{color:var(--text-light); font-family:var(--serif); font-size:1.1rem; display:block;}
+  .decision-log{margin-top:20px;}
+  .decision-log .item{display:flex; align-items:baseline; gap:10px; padding:7px 0; border-bottom:1px solid var(--line); font-size:.82rem;}
+  .decision-log .item .dot{width:8px; height:8px; border-radius:50%; flex-shrink:0;}
+  .decision-log .item .src{color:var(--text-dim); font-size:.72rem; min-width:60px;}
+
+  /* ===== ACCESSIBILITY / FOCUS ===== */
+  a:focus-visible, button:focus-visible, input:focus-visible, .scenario-card:focus-within, .osint-card:focus-visible, .match-card:focus-visible{
+    outline:2px solid var(--warn); outline-offset:2px; border-radius:2px;
+  }
+
+  /* ===== SESSION RESTORE BANNER ===== */
+  .restore-banner{background:rgba(217,165,88,.14); border:1px solid var(--warn-deep); color:var(--text-light); font-size:.82rem; padding:10px 14px; border-radius:4px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;}
+  .restore-banner button{background:none; border:1px solid var(--line); color:var(--text-dim); padding:5px 10px; border-radius:3px; font-size:.74rem; cursor:pointer;}
+  .restore-banner button:hover{border-color:var(--danger-deep); color:var(--danger);}
+
+  .triad{display:flex; gap:16px; margin:24px 0 8px; flex-wrap:wrap;}
+  .triad .pillar{flex:1; min-width:150px; background:var(--ink-2); border:1px solid var(--line); border-radius:4px; padding:18px;}
+  .triad .pillar.hit{border-color:var(--danger-deep); background:linear-gradient(180deg, rgba(217,105,90,.12), rgba(217,105,90,.02));}
+  .triad .pillar h4{margin:0 0 6px; font-family:var(--serif); font-size:1.05rem;}
+  .triad .pillar span{font-size:.8rem; color:var(--text-dim);}
+  .triad .pillar.hit span.tag{color:var(--danger); font-weight:700; display:block; margin-top:8px;}
+
+  .legend{display:flex; gap:18px; flex-wrap:wrap; margin-bottom:8px; font-size:.78rem; color:var(--text-dim);}
+  .legend span.dot{display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; vertical-align:middle;}
+
+  .scenario-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:10px;}
+  @media(max-width:720px){.scenario-grid{grid-template-columns:1fr;}}
+  .scenario-card{background:var(--glass); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border:1px solid var(--glass-brd); border-radius:var(--r-lg); padding:22px; display:flex; flex-direction:column; gap:8px; box-shadow:var(--shadow); position:relative; overflow:hidden;}
+  .scenario-card::before{content:""; position:absolute; top:0; left:0; right:0; height:3px; background:var(--grad-warm);}
+  .scenario-card .pillrow{display:flex; gap:6px; flex-wrap:wrap;}
+  .scenario-card h3{margin:2px 0 0; font-family:var(--serif); font-size:1.2rem;}
+  .scenario-card p{margin:0; color:var(--text-dim); font-size:.88rem; flex-grow:1;}
+  .scenario-card .role{font-size:.78rem; color:var(--text-dim); font-style:italic;}
+  .scenario-card .realcase{font-size:.74rem; color:var(--warn); font-weight:600;}
+  .scenario-card .mech{font-size:.7rem; color:var(--tech); font-weight:600;}
+  .startbtn{align-self:flex-start; margin-top:6px; background:var(--grad-warm); border:none; color:#231506; padding:10px 18px; border-radius:var(--r-pill); font-size:.82rem; font-weight:700; cursor:pointer; box-shadow:0 6px 16px rgba(255,138,106,.28);}
+  .startbtn:hover{box-shadow:0 10px 22px rgba(255,138,106,.42); transform:translateY(-1px);}
+
+  /* ===== ENTRANCE ANIMATION ===== */
+  .reveal{opacity:0; transform:translateY(14px); transition:opacity .5s ease, transform .5s ease;}
+  .reveal.in-view{opacity:1; transform:translateY(0);}
+  @keyframes fadeInUp{from{opacity:0; transform:translateY(14px);} to{opacity:1; transform:translateY(0);}}
+  #intro .dash-card{animation:fadeInUp .55s ease both;}
+  #intro .grid2 .card{animation:fadeInUp .55s ease both .08s;}
+  #mind-sec .principle{animation:fadeInUp .5s ease both;}
+
+  .story-header{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;}
+  .story-header .role-tag{font-size:.85rem; color:var(--text-dim);}
+  .backlink{font-size:.8rem; color:var(--text-dim); cursor:pointer; text-decoration:underline; background:none; border:none; padding:0;}
+  .journal{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:18px;}
+  .journal .step{font-size:.72rem; padding:4px 10px; background:var(--ink-3); border:1px solid var(--line); border-radius:20px; color:var(--text-dim);}
+
+  .story-box{background:var(--paper); color:#20242c; border-radius:6px; padding:22px; margin-bottom:16px; font-size:1rem;}
+  .story-box .tag-line{font-size:.72rem; color:#7a745f; font-weight:700; letter-spacing:.4px; margin-bottom:10px; text-transform:uppercase;}
+  .story-box p{margin:0;}
+
+  .choices{display:flex; flex-direction:column; gap:10px;}
+  .choice-btn{text-align:left; padding:14px 20px; background:var(--glass); backdrop-filter:blur(10px); border:1px solid var(--glass-brd); border-radius:var(--r-md); color:var(--text-light); font-size:.92rem; cursor:pointer; transition:.15s;}
+  .choice-btn:hover{border-color:var(--warn); background:var(--ink-3);}
+  .choice-btn .arrow{color:var(--warn); margin-right:8px; font-family:var(--serif);}
+
+  .outcome{border-radius:6px; padding:24px; margin-bottom:8px; border:1px solid var(--line);}
+  .outcome.breach{border-color:var(--danger-deep); background:linear-gradient(180deg, rgba(217,105,90,.12), rgba(217,105,90,.03));}
+  .outcome.safe{border-color:var(--safe-deep); background:linear-gradient(180deg, rgba(111,174,122,.12), rgba(111,174,122,.03));}
+  .outcome.partial{border-color:var(--warn-deep); background:linear-gradient(180deg, rgba(217,165,88,.12), rgba(217,165,88,.03));}
+  .outcome .verdict{font-size:.72rem; font-weight:700; letter-spacing:.6px; text-transform:uppercase; margin-bottom:6px;}
+  .outcome.breach .verdict{color:var(--danger);}
+  .outcome.safe .verdict{color:var(--safe);}
+  .outcome.partial .verdict{color:var(--warn);}
+  .outcome h3{font-family:var(--serif); margin:0 0 12px; font-size:1.35rem;}
+  .outcome p.exp{color:var(--text-light); font-size:.94rem; margin-bottom:16px;}
+  .outcome .lessons{margin:0; padding-left:18px; font-size:.86rem; color:var(--text-dim);}
+  .outcome .lessons li{margin-bottom:5px;}
+  .outcome-actions{display:flex; gap:10px; margin-top:20px; flex-wrap:wrap;}
+  .btn{border:1px solid var(--glass-brd); background:rgba(255,255,255,.05); color:var(--text-light); padding:10px 18px; border-radius:var(--r-pill); font-size:.82rem; cursor:pointer; font-weight:600; backdrop-filter:blur(8px);}
+  .btn:hover{background:rgba(255,255,255,.1); border-color:rgba(255,255,255,.22);}
+  .btn.primary{border:none; background:var(--grad-warm); color:#231506; box-shadow:0 8px 20px rgba(255,138,106,.32); font-weight:700;}
+  .btn.primary:hover{box-shadow:0 10px 26px rgba(255,138,106,.45); transform:translateY(-1px);}
+  .completed-badge{display:inline-block; font-size:.68rem; color:var(--safe); border:1px solid var(--safe-deep); padding:2px 8px; border-radius:10px; margin-left:8px; vertical-align:middle;}
+
+  /* ===== EMAIL CLIENT WIDGET ===== */
+  .email-app{background:var(--paper); color:#20242c; border-radius:6px; overflow:hidden;}
+  .email-app .bar{background:#e4ddcc; padding:9px 16px; font-size:.76rem; font-weight:700; color:#6b6656; display:flex; justify-content:space-between;}
+  .email-msg{padding:16px; border-bottom:1px solid #d8d0ba;}
+  .email-top{display:flex; justify-content:space-between; font-size:.8rem; color:#6b6656; margin-bottom:6px;}
+  .email-from{font-weight:700; color:#20242c;}
+  .email-subj{font-weight:700; margin-bottom:8px;}
+  .email-body{font-size:.9rem; color:#3a362b; margin-bottom:12px;}
+  .attachment-chip{display:inline-flex; align-items:center; gap:8px; background:#e4ddcc; border:1px solid #b9b093; padding:8px 14px; border-radius:4px; cursor:pointer; font-size:.84rem; font-weight:600; margin-bottom:14px;}
+  .attachment-chip:hover{background:#dcd3ba;}
+  .email-actions{display:flex; gap:8px; flex-wrap:wrap;}
+  .btn-paper{border:1px solid #b9b093; background:#f6f2e6; color:#20242c; padding:8px 14px; border-radius:3px; font-size:.8rem; cursor:pointer; font-weight:600;}
+  .btn-paper:hover{background:#efe6cf;}
+
+  /* ===== BROWSER / LOGIN WIDGET ===== */
+  .browser{border-radius:6px; overflow:hidden; border:1px solid var(--line);}
+  .browser .chrome{background:#dcd6c8; padding:9px 12px; display:flex; align-items:center; gap:8px;}
+  .browser .dots{display:flex; gap:5px;}
+  .browser .dots span{width:9px; height:9px; border-radius:50%; background:#b6ad95;}
+  .browser .addr{flex-grow:1; background:#f2eede; border-radius:14px; padding:5px 12px; font-size:.76rem; font-family:var(--mono); color:#5a5540; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;}
+  .browser .addr.sus{color:var(--danger-deep); font-weight:700;}
+  .browser .page{background:var(--paper); color:#20242c; padding:34px 20px; text-align:center;}
+  .login-card{max-width:280px; margin:0 auto; background:#fff; border-radius:6px; padding:22px; box-shadow:0 2px 10px rgba(0,0,0,.08);}
+  .login-card h4{margin:0 0 4px; font-family:var(--serif);}
+  .login-card .note{font-size:.72rem; color:#8a8471; margin-bottom:14px;}
+  .login-card input{width:100%; padding:9px 10px; margin-bottom:10px; border:1px solid #cfc7ab; border-radius:3px; font-size:.85rem;}
+  .login-card button{width:100%; padding:9px; border:none; border-radius:3px; background:#4a4234; color:#fff; font-weight:700; cursor:pointer; font-size:.85rem;}
+  .login-card button:hover{background:#3a3327;}
+  .secondary-row{margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; justify-content:center;}
+
+  /* ===== PHONE / SMS / CALL ===== */
+  .phone{max-width:300px; margin:0 auto; background:#14120f; border-radius:24px; padding:12px; border:1px solid #3a352c;}
+  .phone-screen{background:#e7e9ee; border-radius:14px; padding:16px; color:#1b1e24; min-height:140px;}
+  .bubble{background:#fff; border-radius:12px; padding:10px 12px; font-size:.85rem; margin-bottom:10px; box-shadow:0 1px 2px rgba(0,0,0,.08);}
+  .bubble .sender{font-size:.68rem; color:#7a7f8a; margin-bottom:4px; font-weight:700;}
+  .bubble a.fake-link{color:#8a5060; text-decoration:underline; cursor:pointer; font-weight:700;}
+  .callscreen{text-align:center; padding:10px 4px;}
+  .callscreen .caller{font-size:.95rem; font-weight:700; margin-bottom:2px;}
+  .callscreen .calltag{font-size:.7rem; color:#6b6f79; margin-bottom:16px;}
+  .call-line{background:#fff; border-radius:10px; padding:10px 12px; font-size:.84rem; margin-bottom:8px; text-align:left;}
+
+  /* ===== OS / SMARTSCREEN DIALOG ===== */
+  .os-dialog{max-width:360px; margin:0 auto; background:#f3f3f3; color:#1b1e24; border-radius:8px; overflow:hidden; box-shadow:0 4px 22px rgba(0,0,0,.35); border:1px solid #cfcfcf;}
+  .os-dialog .os-title{background:#0067c0; color:#fff; padding:8px 14px; font-size:.8rem; font-weight:700;}
+  .os-dialog .os-body{padding:18px 16px; font-size:.85rem;}
+  .os-dialog .os-body b{display:block; margin-bottom:8px;}
+  .os-dialog .os-actions{display:flex; justify-content:flex-end; gap:8px; padding:10px 14px; background:#eaeaea;}
+  .os-btn{padding:7px 14px; border-radius:3px; border:1px solid #b8b8b8; background:#fff; font-size:.8rem; cursor:pointer;}
+  .os-btn.run{background:#0067c0; color:#fff; border-color:#0067c0;}
+
+  /* ===== TERMINAL ===== */
+  .terminal{background:var(--term-bg); border:1px solid #2a2620; border-radius:6px; padding:16px; font-family:var(--mono); font-size:.82rem; color:var(--term-fg); min-height:80px;}
+  .terminal .line{margin-bottom:6px; white-space:pre-wrap; word-break:break-all;}
+  .terminal .line.out{color:#c9d1d9;}
+  .terminal .cursor{display:inline-block; width:7px; height:14px; background:var(--term-fg); vertical-align:middle; animation:blink 1s step-end infinite;}
+  @keyframes blink{50%{opacity:0;}}
+
+  /* ===== SQLI FORM ===== */
+  .sqli-box{background:var(--paper); color:#20242c; border-radius:6px; padding:22px;}
+  .sqli-box h4{margin:0 0 4px; font-family:var(--serif);}
+  .sqli-box .field{margin-bottom:10px;}
+  .sqli-box label{display:block; font-size:.74rem; color:#6b6656; margin-bottom:3px; font-weight:700;}
+  .sqli-box input{width:100%; padding:9px 10px; border:1px solid #cfc7ab; border-radius:3px; font-family:var(--mono); font-size:.85rem;}
+  .sqli-msg{margin-top:10px; font-size:.84rem; font-weight:700;}
+  .sqli-msg.denied{color:var(--danger-deep);}
+  .db-table{margin-top:14px; width:100%; border-collapse:collapse; font-size:.76rem;}
+  .db-table th,.db-table td{border:1px solid #cfc7ab; padding:5px 8px; text-align:left;}
+  .db-table th{background:#e4ddcc;}
+
+  /* ===== FEED (attacker panel) ===== */
+  .feed-box{background:#100e0b; border:1px solid #2a2620; border-radius:6px; padding:16px;}
+  .feed-line{font-family:var(--mono); font-size:.8rem; color:#c9a260; margin-bottom:8px; padding-bottom:8px; border-bottom:1px dashed #23293380;}
+  .feed-line:last-child{border-bottom:none;}
+
+  /* ===== DARK WEB PANEL ===== */
+  .darkweb-note{font-size:.72rem; color:var(--text-dim); margin-bottom:12px; border:1px solid var(--line); padding:8px 12px; border-radius:4px;}
+  .listing-card{background:rgba(255,255,255,.05); border:1px solid var(--glass-brd); border-radius:var(--r-md); padding:14px; margin-bottom:10px;}
+  .listing-card .lt{font-weight:700; font-size:.9rem;}
+  .listing-card .ld{color:var(--text-dim); font-size:.82rem; margin:4px 0;}
+  .listing-card .lp{color:var(--warn); font-weight:700; font-size:.82rem;}
+
+  .step-btn{margin-top:14px;}
+
+  /* principles ref */
+  .principle{border-left:3px solid var(--warn); padding:10px 16px; margin-bottom:14px; background:var(--ink-2);}
+  .principle h4{margin:0 0 4px; font-family:var(--serif);}
+  .principle .ex{color:var(--text-dim); font-style:italic; font-size:.88rem; margin-top:6px;}
+
+  /* quiz */
+  .q{margin-bottom:26px;}
+  .q p.stem{font-weight:700; margin-bottom:10px;}
+  .opt{display:block; width:100%; text-align:left; padding:12px 16px; margin-bottom:8px; background:var(--glass); backdrop-filter:blur(10px); border:1px solid var(--glass-brd); border-radius:var(--r-md); color:var(--text-light); cursor:pointer; font-size:.9rem;}
+  .opt:hover{border-color:rgba(255,255,255,.22);}
+  .opt.correct{border-color:var(--safe); background:rgba(111,174,122,.14);}
+  .opt.wrong{border-color:var(--danger); background:rgba(217,105,90,.14);}
+  .score-box{text-align:center; padding:34px 20px; border:1px solid var(--line); border-radius:6px; background:var(--ink-2); display:none;}
+  .score-box.show{display:block;}
+  .score-box .num{font-family:var(--serif); font-size:3rem; color:var(--warn);}
+
+  .nav-foot{display:flex; justify-content:space-between; margin-top:34px;}
+  footer.end{margin-top:60px; padding-top:20px; border-top:1px solid var(--line); color:var(--text-dim); font-size:.8rem;}
+</style>
+</head>
+<body>
+<div class="blob blob-a"></div>
+<div class="blob blob-b"></div>
+<div class="blob blob-c"></div>
+<div class="shell">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
+      <span>Sala de Casos<small>SEGURANÇA DE SISTEMAS COMPUTACIONAIS · SIMULAÇÃO INTERATIVA DE CASOS REAIS</small></span>
+    </div>
+    <div class="status">Interfaces simuladas de e-mail, login, download e terminal<br>nenhum dado seu sai desta página</div>
+  </header>
+
+  <nav class="tabs">
+    <div class="tab active" data-tab="intro"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>Início</div>
+    <div class="tab" data-tab="sim"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></svg>Simulador</div>
+    <div class="tab" data-tab="mind"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V17h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"/></svg>Gatilhos</div>
+    <div class="tab" data-tab="tools"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>Ferramentas</div>
+    <div class="tab" data-tab="soc"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg>Painel</div>
+    <div class="tab" data-tab="quiz"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M8.5 13.5L6 22l6-3 6 3-2.5-8.5"/></svg>Avaliação</div>
+    <div class="tab" data-tab="curve"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 5"/><polyline points="14 5 21 5 21 12"/></svg>Curva</div>
+  </nav>
+
+  <!-- 00 INTRO -->
+  <section class="panel active" id="intro">
+    <div class="case-eyebrow">ORIENTAÇÃO</div>
+    <h1 class="case">Não leia sobre o ataque. Viva o ataque.</h1>
+    <p class="lede">Cada caso a seguir aconteceu de verdade. Em vez de só descrever o que houve, este simulador recria a interface por trás do momento decisivo: você vai abrir o e-mail de verdade, clicar no link de verdade, preencher a senha na página falsa, executar o arquivo baixado, ou até testar com suas próprias mãos a injeção de SQL que derrubou um provedor de telecomunicações inteiro.</p>
+
+    <div class="dash-card" id="progressDash">
+      <div id="restoreBanner"></div>
+      <div class="dash-top">
+        <div class="dash-title">Seu progresso nesta sessão</div>
+        <div class="dash-badge" id="dashBadge">Iniciante</div>
+      </div>
+      <div class="dash-grid">
+        <div class="dash-item">
+          <div class="dash-label">Casos explorados</div>
+          <div class="dash-bar"><div class="dash-fill" id="dashSimFill" style="width:0%"></div></div>
+          <div class="dash-num" id="dashSimNum">0 / 10</div>
+        </div>
+        <div class="dash-item">
+          <div class="dash-label">Painel do analista</div>
+          <div class="dash-bar"><div class="dash-fill" id="dashSocFill" style="width:0%"></div></div>
+          <div class="dash-num" id="dashSocNum">ainda não realizado</div>
+        </div>
+        <div class="dash-item">
+          <div class="dash-label">Avaliação final</div>
+          <div class="dash-bar"><div class="dash-fill" id="dashQuizFill" style="width:0%"></div></div>
+          <div class="dash-num" id="dashQuizNum">ainda não realizada</div>
+        </div>
+      </div>
+      <div style="margin-top:16px; text-align:right;">
+        <button class="btn" id="resetAllBtn" style="font-size:.74rem;">Reiniciar tudo (apaga o progresso salvo)</button>
+      </div>
+    </div>
+
+    <div class="triad">
+      <div class="pillar"><h4>Integridade</h4><span>A informação não pode ser alterada indevidamente.</span></div>
+      <div class="pillar"><h4>Disponibilidade</h4><span>A informação precisa estar acessível quando necessário.</span></div>
+      <div class="pillar hit"><h4>Confidencialidade</h4><span>Só quem tem autorização pode acessar a informação.</span><span class="tag">→ ALVO DESTA SIMULAÇÃO</span></div>
+    </div>
+
+    <div class="grid2" style="margin-top:26px;">
+      <div class="card">
+        <h3><span class="pill human">FALHA HUMANA</span></h3>
+        <p style="color:var(--text-dim); font-size:.9rem;">A pessoa autorizada é convencida a entregar a chave voluntariamente — por e-mail, ligação, SMS ou um instalador baixado da internet.</p>
+      </div>
+      <div class="card">
+        <h3><span class="pill tech">FALHA TÉCNICA</span></h3>
+        <p style="color:var(--text-dim); font-size:.9rem;">Uma configuração aberta, um código vulnerável a injeção, ou uma atualização não aplicada deixa a porta destrancada por conta própria.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Como ler os níveis</h3>
+      <div class="legend">
+        <span><span class="dot" style="background:var(--lvl1);"></span>Nível 1 — sinal de alerta bem visível, mas ignorado</span>
+        <span><span class="dot" style="background:var(--lvl2);"></span>Nível 2 — exige atenção e verificação ativa</span>
+        <span><span class="dot" style="background:var(--lvl3);"></span>Nível 3 — sofisticado o bastante para enganar profissionais</span>
+      </div>
+      <p style="color:var(--text-dim); font-size:.9rem; margin-top:12px;">No final de cada caminho, o desfecho é comparado ao que realmente aconteceu, com nomes, datas e números reais — e, em alguns casos, você pode ver o que costuma acontecer com dados vazados depois.</p>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3><span class="pill attacker">PERSPECTIVA DO ATACANTE</span></h3>
+        <p style="color:var(--text-dim); font-size:.9rem;">Em dois casos, você está do outro lado: monta o golpe e faz o reconhecimento antes de agir. Colocar-se nesse papel treina o mesmo olhar que reconhece o ataque quando ele mira em você.</p>
+      </div>
+      <div class="card">
+        <h3>Modo defensor</h3>
+        <p style="color:var(--text-dim); font-size:.9rem;">Na aba <b>Painel do analista</b>, você troca de papel: os casos já viraram alertas numa central de segurança, e cabe a você decidir o que ignorar, investigar ou bloquear.</p>
+      </div>
+    </div>
+
+    <div class="nav-foot"><span></span><button class="btn primary" onclick="goTab('sim')">Ir para o simulador →</button></div>
+  </section>
+
+  <!-- 01 SIMULATOR -->
+  <section class="panel" id="sim-sec">
+    <div class="case-eyebrow">SIMULADOR</div>
+    <h1 class="case" id="simTitle">Escolha um caso</h1>
+    <p class="lede" id="simLede">Dez incidentes e exercícios, cada um com uma interface diferente para você interagir de verdade — incluindo dois em que você assume o papel de quem ataca.</p>
+
+    <div class="scenario-grid" id="scenarioGrid"></div>
+
+    <div id="storyArea" style="display:none;">
+      <div class="story-header">
+        <button class="backlink" onclick="exitStory()">← voltar para a lista de casos</button>
+        <span class="role-tag" id="storyRole"></span>
+      </div>
+      <div class="perspective-banner" id="perspBanner" style="display:none;"></div>
+      <div class="journal" id="journal"></div>
+      <div class="story-box" id="storyBox">
+        <div class="tag-line" id="storyTag">SITUAÇÃO</div>
+        <p id="storyText"></p>
+      </div>
+      <div id="widgetArea"></div>
+      <div class="choices" id="choicesArea"></div>
+      <div id="outcomeArea"></div>
+    </div>
+  </section>
+
+  <!-- 02 PSYCHOLOGICAL PRINCIPLES -->
+  <section class="panel" id="mind-sec">
+    <div class="case-eyebrow">REFERÊNCIA</div>
+    <h1 class="case">Os gatilhos por trás de cada decisão</h1>
+    <p class="lede">Os casos do simulador reaproveitam, na vida real, os mesmos princípios de persuasão descritos por Robert Cialdini — aplicados contra a vítima em vez de a favor dela.</p>
+
+    <div class="principle"><h4>Autoridade</h4>Pessoas obedecem mais facilmente a quem parece ocupar uma posição de poder ou conhecimento técnico.<div class="ex">"Aqui é do suporte de TI" — ataque à Twitter, 2020</div></div>
+    <div class="principle"><h4>Urgência e escassez</h4>Prazos curtos cortam o tempo de reflexão da vítima.<div class="ex">"Sua senha expira hoje" — campanha de smishing contra Twilio/Cloudflare, 2022</div></div>
+    <div class="principle"><h4>Curiosidade</h4>Um nome de arquivo bem escolhido motiva uma ação que, em outro contexto, pareceria arriscada.<div class="ex">"2011 Recruitment Plan.xls" — RSA Security, 2011</div></div>
+    <div class="principle"><h4>Ganância / vantagem gratuita</h4>A promessa de obter algo de valor sem pagar reduz a cautela em relação à fonte.<div class="ex">"Ativador grátis" e "cheats" de jogos distribuindo o malware RedLine Stealer</div></div>
+    <div class="principle" style="border-left-color:var(--tech);"><h4>Complacência técnica</h4>Configurações provisórias e atualizações pendentes viram permanentes porque "está funcionando" e ninguém revisita a decisão.<div class="ex">Correção disponível e não aplicada por semanas — Equifax, 2017; TalkTalk, 2015</div></div>
+    <div class="principle" style="border-left-color:var(--tech);"><h4>Excesso de permissão</h4>Conceder mais acesso do que o necessário transforma uma falha pequena em um vazamento gigante.<div class="ex">Firewall com permissão de leitura a centenas de áreas de armazenamento — Capital One, 2019</div></div>
+
+    <div class="nav-foot"><button class="btn" onclick="goTab('sim')">← Voltar</button><button class="btn primary" onclick="goTab('tools')">Ir para ferramentas e desafios →</button></div>
+  </section>
+
+  <!-- 03 TOOLS & CHALLENGES -->
+  <section class="panel" id="tools-sec">
+    <div class="case-eyebrow">PRATIQUE</div>
+    <h1 class="case">Ferramentas e desafios rápidos</h1>
+    <p class="lede">Três exercícios curtos para fixar o que os casos ensinaram, na prática.</p>
+
+    <div class="card pw-tool">
+      <h3>Estimador de tempo de quebra de senha</h3>
+      <p style="color:var(--text-dim); font-size:.85rem; margin-top:-6px;">Cálculo aproximado, feito no seu navegador — nada do que você digitar aqui é enviado ou guardado em qualquer lugar.</p>
+      <input id="pwInput" type="text" placeholder="Digite uma senha de teste" autocomplete="off" aria-label="Senha de teste para estimar tempo de quebra">
+      <div class="pw-bar" role="progressbar" aria-label="Força estimada da senha" aria-valuemin="0" aria-valuemax="100" id="pwBarWrap"><div class="fill" id="pwFill"></div></div>
+      <div class="pw-result" id="pwResult">Digite algo acima para ver a estimativa.</div>
+    </div>
+
+    <div class="card url-tool">
+      <h3>Inspetor de endereços</h3>
+      <p style="color:var(--text-dim); font-size:.85rem; margin-top:-6px;">Cole ou digite um endereço para ver qual domínio realmente manda nele — a mesma leitura usada nos casos de phishing e smishing.</p>
+      <input id="urlInput" type="text" placeholder="ex: contas.corponex.com.br.site-verificacao.net/login" autocomplete="off" aria-label="Endereço para inspecionar">
+      <div class="url-result" id="urlResult">Digite um endereço acima.</div>
+    </div>
+
+    <div class="card">
+      <h3>Jogo da memória — técnica ↔ caso real</h3>
+      <p style="color:var(--text-dim); font-size:.85rem; margin-top:-6px;">Clique numa técnica e depois no caso real correspondente. Pares corretos ficam verdes; errados piscam e voltam ao normal.</p>
+      <div class="match-status" id="matchStatus">0 de 6 pares encontrados</div>
+      <div class="match-grid" id="matchGrid"></div>
+    </div>
+
+    <div class="nav-foot"><button class="btn" onclick="goTab('mind')">← Voltar</button><button class="btn primary" onclick="goTab('soc')">Ir para o painel do analista →</button></div>
+  </section>
+
+  <!-- 04 SOC DASHBOARD -->
+  <section class="panel" id="soc-sec">
+    <div class="case-eyebrow">MODO DEFENSOR</div>
+    <h1 class="case">Painel do Analista de Segurança</h1>
+    <p class="lede">Numa central de segurança de verdade, os alertas não chegam em ordem nem avisam se são reais. Cada alerta abaixo ecoa um padrão de algum caso deste simulador — ou é só ruído. Decida: ignorar, investigar ou bloquear.</p>
+    <div id="socArea"></div>
+    <div class="nav-foot"><button class="btn" onclick="goTab('tools')">← Voltar</button><button class="btn primary" onclick="goTab('quiz')">Ir para a avaliação final →</button></div>
+  </section>
+
+  <!-- 05 QUIZ -->
+  <section class="panel" id="quiz-sec">
+    <div class="case-eyebrow">AVALIAÇÃO FINAL</div>
+    <h1 class="case">Fechando o caso</h1>
+    <p class="lede">Perguntas baseadas nos incidentes reais explorados no simulador.</p>
+    <div id="quizBody"></div>
+    <div class="score-box" id="scoreBox">
+      <div style="color:var(--text-dim); font-size:.8rem; letter-spacing:1px;">RESULTADO FINAL</div>
+      <div class="num" id="scoreNum">0/12</div>
+      <p id="scoreMsg" style="color:var(--text-dim); max-width:460px; margin:14px auto 0;"></p>
+    </div>
+    <div id="finalSummary"></div>
+    <div class="nav-foot no-print"><button class="btn" onclick="goTab('soc')">← Voltar</button><button class="btn primary" onclick="goTab('curve')">Ver a curva de decisões →</button></div>
+  </section>
+
+  <!-- 06 DECISION CURVE -->
+  <section class="panel" id="curve-sec">
+    <div class="case-eyebrow">EXPERIMENTAL · SÓ FRONT-END</div>
+    <h1 class="case">Curva de decisões da sessão</h1>
+    <p class="lede">Cada escolha que você fez — nos casos, no painel do analista e no quiz — vira um ponto neste gráfico. A curva sobe quando a decisão foi correta e cai quando você "caiu no golpe". Como ainda não há um servidor guardando isso, o gráfico existe só enquanto esta página estiver aberta: é um protótipo de como ficaria com dados reais de várias pessoas.</p>
+
+    <div class="chart-card">
+      <div class="chart-legend">
+        <span><span class="dot" style="background:var(--safe);"></span>Decisão correta / não caiu</span>
+        <span><span class="dot" style="background:var(--warn);"></span>Decisão parcial</span>
+        <span><span class="dot" style="background:var(--danger);"></span>Caiu no golpe / decisão incorreta</span>
+      </div>
+      <div id="chartArea"></div>
+      <div class="chart-stats" id="chartStats"></div>
+    </div>
+
+    <div class="decision-log" id="decisionLogArea"></div>
+
+    <div class="nav-foot no-print">
+      <button class="btn" onclick="goTab('quiz')">← Voltar</button>
+      <button class="btn" id="resetCurveBtn">Reiniciar curva</button>
+    </div>
+  </section>
+
+  <footer class="end">Material didático produzido para a disciplina de Segurança de Sistemas Computacionais. Os incidentes descritos são reais e documentados publicamente; as interfaces, diálogos e pontos de decisão foram reconstruídos de forma didática e não se conectam a nenhum sistema, site ou servidor real.</footer>
+</div>
+
+<script>
+/* ================= TAB NAV ================= */
+const tabs = document.querySelectorAll('.tab');
+const panels = { intro:document.getElementById('intro'), sim:document.getElementById('sim-sec'), mind:document.getElementById('mind-sec'), tools:document.getElementById('tools-sec'), soc:document.getElementById('soc-sec'), quiz:document.getElementById('quiz-sec'), curve:document.getElementById('curve-sec') };
+function goTab(name){
+  const apply = ()=>{
+    tabs.forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+    Object.entries(panels).forEach(([k,el])=>el.classList.toggle('active', k===name));
+    if(name==='intro' && typeof updateProgressDashboard==='function') updateProgressDashboard();
+    if(name==='curve' && typeof renderDecisionChart==='function') renderDecisionChart();
+  };
+  if(document.startViewTransition){ document.startViewTransition(apply); }
+  else{ apply(); }
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+tabs.forEach(t=>t.addEventListener('click', ()=>goTab(t.dataset.tab)));
+
+/* ================= SCENARIOS ================= */
+const SCENARIOS = {
+
+  rsa:{
+    title:"O anexo na pasta de spam", category:"human", level:1, mech:"Simulação: cliente de e-mail",
+    real:"Caso real: RSA Security, março de 2011",
+    role:"Você é um funcionário da RSA Security, dona da tecnologia SecurID.",
+    teaser:"Abra a caixa de spam, veja o anexo e decida se habilita o conteúdo.",
+    start:"start",
+    nodes:{
+      start:{ tag:"Caixa de e-mail", text:"Enquanto organiza a pasta de lixo eletrônico, você percebe uma mensagem retida pelo filtro de spam.",
+        widget:{ type:"email", folderTag:"Pasta de spam · 1 mensagem",
+          sender:"RH — Recrutamento <rh-recrutamento@corp0nex-externo.com>",
+          subject:"2011 Recruitment Plan.xls",
+          body:"Segue em anexo o plano de recrutamento revisado para aprovação. Habilite a edição para visualizar as tabelas corretamente.",
+          attachment:{name:"2011_Recruitment_Plan.xls", next:"opening"},
+          actions:[{label:"Mover para a lixeira sem abrir", next:"end_safe1"},{label:"Verificar com o RH antes de abrir", next:"verify"}]
+        }
+      },
+      verify:{ tag:"minutos depois", text:"O RH confirma que não enviou nenhum e-mail com esse assunto para você nesta data.",
+        choices:[{label:"Reportar o e-mail à segurança da informação e apagá-lo", next:"end_safe2"}] },
+      opening:{ tag:"abrindo o arquivo", text:"O programa de planilhas abre o arquivo e exibe um aviso.",
+        widget:{ type:"smartscreen", title:"Aviso de conteúdo ativo",
+          message:"Este arquivo contém conteúdo ativo (objetos incorporados). Deseja habilitar a edição para visualizá-lo corretamente?",
+          proceedLabel:"Habilitar conteúdo", cancelLabel:"Manter desabilitado",
+          proceedNext:"term1", cancelNext:"end_safe_late" } },
+      term1:{ tag:"em segundo plano", text:"",
+        widget:{ type:"terminal", next:"end_breach1", lines:[
+          "[sistema] habilitando conteúdo ativo do documento...",
+          "[explorador] executando objeto incorporado (falha do Adobe Flash, CVE-2011-0609)",
+          "[rede] conexão de saída estabelecida para servidor externo",
+          "[processo] ferramenta de acesso remoto iniciada em segundo plano",
+          "[status] acesso oculto à máquina ativo — nenhum alerta visível ao usuário"
+        ]}},
+      end_breach1:{end:true,type:"breach",title:"A planilha que abriu uma porta nos fundos",
+        text:"Foi exatamente assim que a RSA Security foi invadida em março de 2011. Um funcionário recuperou o e-mail da pasta de spam e habilitou o conteúdo de uma planilha anexada. Ela continha um exploit de dia zero em uma falha do Adobe Flash, que instalava silenciosamente uma ferramenta de acesso remoto no computador da vítima. Os atacantes escalaram privilégios pela rede interna até alcançar informações ligadas à tecnologia de autenticação SecurID, usada por milhares de empresas no mundo inteiro.",
+        lessons:["O próprio sistema de e-mail já havia sinalizado a mensagem como suspeita — o erro foi confiar mais na curiosidade do que nesse alerta automático.","Avisos de 'conteúdo ativo' ou 'habilitar edição' existem justamente para essa situação: um documento comum não precisa disso.","Um único clique, mesmo de um funcionário sem acesso privilegiado, pode abrir caminho para o restante da rede de uma organização inteira."]},
+      end_safe_late:{end:true,type:"safe",title:"Cancelado no último passo",
+        text:"O ataque real de 2011 só funcionou porque a vítima habilitou o conteúdo ativo do arquivo. Ao recusar esse passo, mesmo depois de já ter aberto o anexo, você interrompe a cadeia de infecção antes que ela comece.",
+        lessons:["Um arquivo aberto não é, por si só, um arquivo executado — o pedido de 'habilitar conteúdo' é o verdadeiro ponto de decisão.","Documentos de escritório comuns raramente precisam de permissões especiais para serem apenas lidos.","Reconhecer um sinal de alerta tarde ainda é melhor do que não reconhecê-lo."]},
+      end_safe1:{end:true,type:"safe",title:"O filtro de spam fez o trabalho dele",
+        text:"Ao respeitar a triagem automática do sistema de e-mail, você elimina qualquer chance de expor sua máquina ao exploit — o oposto da decisão que permitiu a invasão real da RSA em 2011.",
+        lessons:["Filtros de spam já aplicam uma primeira camada de triagem baseada em milhões de mensagens maliciosas — vale confiar neles por padrão.","Curiosidade sobre um anexo inesperado é exatamente o gatilho que ataques de phishing são desenhados para explorar."]},
+      end_safe2:{end:true,type:"safe",title:"Verificação evitou o clique",
+        text:"Confirmar a origem da mensagem antes de interagir com o anexo eliminou o risco por completo.",
+        lessons:["Verificar a legitimidade de um anexo inesperado, mesmo vindo de dentro da própria empresa, é uma checagem rápida e de baixo custo.","Reportar tentativas de phishing ajuda a proteger outros colegas que podem ter recebido a mesma mensagem."]}
+    }
+  },
+
+  twitter:{
+    title:"A ligação em plena crise", category:"human", level:2, mech:"Simulação: ligação + página de login",
+    real:"Caso real: Twitter, 15 de julho de 2020",
+    role:"Você é um funcionário do suporte da Twitter, trabalhando remotamente durante a pandemia.",
+    teaser:"Atenda a ligação, ouça o pretexto e decida se preenche a página que ele te manda.",
+    start:"start",
+    nodes:{
+      start:{ tag:"telefonema", text:"",
+        widget:{ type:"call", caller:"TI Interno", calltag:"chamada recebida",
+          transcript:[
+            "Oi! Aqui é do suporte de TI. Sei que a VPN tem dado dor de cabeça pro time remoto essa semana.",
+            "Já isolei o problema na sua conta. Só preciso que você confirme seu login numa página rápida pra eu aplicar a correção agora."
+          ],
+          choices:[
+            {label:"Perguntar por qual sistema esse chamado foi aberto antes de continuar", next:"check"},
+            {label:"Aceitar e pedir o link", next:"login1"},
+            {label:"Desligar e confirmar direto com a equipe de TI pelo canal interno", next:"end_safe1"}
+          ]
+        }},
+      check:{ tag:"do outro lado da linha", text:"A pessoa hesita, muda de assunto e insiste: 'é rápido, é só confirmar agora'.",
+        choices:[{label:"A insistência reforça a suspeita — você encerra a ligação e reporta", next:"end_safe2"}] },
+      login1:{ tag:"link recebido durante a ligação", text:"",
+        widget:{ type:"login", urlBar:"twiiter-sso-verify.com/login", brand:"Login — Ferramentas Internas",
+          note:"Página enviada por quem ligou, ainda em chamada.",
+          submitNext:"end_breach1",
+          secondary:[{label:"Comparar esse endereço com o domínio oficial antes de continuar", next:"inspect1"}]
+        }},
+      inspect1:{ tag:"comparando o endereço", text:"O domínio começa com 'twiiter' (com dois 'i') seguido de '-sso-verify.com' — diferente do domínio oficial da empresa.",
+        choices:[{label:"Mesmo assim preencher os dados", next:"end_breach1"},{label:"Cancelar e reportar a ligação", next:"end_safe1"}] },
+      end_breach1:{end:true,type:"breach",title:"O acesso que abriu as contas mais visíveis da internet",
+        text:"Foi assim, em essência, que a Twitter foi invadida em 15 de julho de 2020. Usando informações verossímeis sobre problemas reais de VPN durante a pandemia, os atacantes convenceram por telefone um pequeno grupo de funcionários a fornecer credenciais em uma página falsa. Com esse acesso inicial, identificaram colegas com permissão para usar a ferramenta interna de suporte a contas e os atacaram da mesma forma. Ao todo, 130 contas foram alvo, 45 usadas para publicar uma fraude de bitcoin — incluindo os perfis verificados de Barack Obama, Elon Musk, Kanye West e da própria Apple — arrecadando mais de 100 mil dólares em poucas horas.",
+        lessons:["Um pretexto crível não precisa ser elaborado: basta mencionar um problema real e comum que a vítima já vive no dia a dia.","Uma vez dentro do sistema, os atacantes usam o primeiro acesso para localizar quem tem permissões maiores — o ataque cresce em cascata.","Ferramentas internas com grande poder de ação exigem verificação redobrada, exatamente por concentrarem tanto risco."],
+        darkweb:{ intro:"Contas comprometidas como essas também costumam virar produto.", listings:[
+          {title:"Lote de acessos administrativos verificados", detail:"Contas com selo de verificação e alto número de seguidores, obtidas via engenharia social.", price:"Negociado por lance"},
+          {title:"Serviço de 'takeover' sob encomenda", detail:"Oferta de acesso a contas específicas mediante pagamento antecipado.", price:"Valor variável"}
+        ]}},
+      end_safe1:{end:true,type:"safe",title:"Verificação por canal independente barrou o golpe",
+        text:"Usar um canal de contato que você já tinha antes da ligação — não um link fornecido por quem ligou — expõe a farsa em segundos, exatamente o passo que faltou na Twitter em 2020.",
+        lessons:["Um chamado de TI legítimo pode esperar alguns minutos para uma reconfirmação; um golpe não pode.","Mencionar um problema real e conhecido não prova que quem liga é quem diz ser."] },
+      end_safe2:{end:true,type:"safe",title:"A insistência denunciou a farsa",
+        text:"A reação impaciente diante de uma pergunta básica de verificação foi, por si só, motivo suficiente para não prosseguir.",
+        lessons:["Pedir para confirmar por qual sistema um chamado foi aberto é uma pergunta legítima, não falta de cooperação.","Uma resposta evasiva a uma pergunta simples de identificação já é um forte sinal de alerta."] }
+    }
+  },
+
+  colonial:{
+    title:"A conta que ninguém desligou", category:"tech", level:2, mech:"Simulação: terminal de acesso remoto",
+    real:"Caso real: Colonial Pipeline, maio de 2021",
+    role:"Você é administrador de TI responsável por revisar contas de acesso remoto (VPN).",
+    teaser:"Uma conta antiga continua ativa. Veja o que acontece se ninguém mexer nisso.",
+    start:"start",
+    nodes:{
+      start:{ tag:"auditoria trimestral de contas de VPN", text:"Você encontra uma conta de VPN de um sistema legado. Ninguém a usa no dia a dia, mas ela segue habilitada e sem autenticação em duas etapas.",
+        choices:[
+          {label:"Deixar como está — desativar contas legadas exige tempo, e ela não é usada mesmo", next:"stuffing"},
+          {label:"Desativar a conta imediatamente, já que não é mais utilizada", next:"end_safe1"},
+          {label:"Manter ativa por precaução, mas exigir autenticação em duas etapas", next:"end_safe2"}
+        ]},
+      stuffing:{ tag:"semanas depois", text:"",
+        widget:{ type:"terminal", next:"end_breach1", lines:[
+          "$ carregando lista de credenciais vazadas (dark_web_dump_2019.txt)...",
+          "$ testando: usuario=eng-legado@colonial senha=Summer2019!",
+          "> resposta do servidor VPN: autenticação aceita",
+          "$ estabelecendo túnel remoto...",
+          "> sessão ativa na rede interna da empresa"
+        ]}},
+      end_breach1:{end:true,type:"breach",title:"Uma porta nos fundos, esquecida e destrancada",
+        text:"Isso reflete o que investigadores encontraram após o ataque de ransomware à Colonial Pipeline em maio de 2021. Uma conta de VPN antiga, sem uso ativo mas ainda habilitada, e sem autenticação em duas etapas, foi usada pelo grupo DarkSide para entrar na rede da empresa. A senha foi encontrada depois em um lote de senhas vazadas na dark web — sinal de reuso de senha. A operadora, responsável por quase metade do combustível da costa leste dos EUA, precisou paralisar 8.850 km de duto por seis dias e pagou cerca de US$ 4,4 milhões em resgate.",
+        lessons:["Uma conta de acesso remoto sem uso ativo continua sendo uma porta de entrada válida se não for formalmente desativada.","Autenticação de um único fator é insuficiente quando a senha pode ter vazado em um serviço totalmente alheio à empresa.","Reaproveitar senhas transforma qualquer vazamento externo em um risco direto para a organização inteira."]},
+      end_safe1:{end:true,type:"safe",title:"Sem conta, sem porta de entrada",
+        text:"Desativar contas sem uso elimina esse vetor por completo — exatamente o passo que faltou antes do ataque real.",
+        lessons:["Contas inativas devem ser desativadas por padrão, não apenas esquecidas enquanto continuam habilitadas.","Um inventário atualizado de contas de acesso é tão importante quanto o de equipamentos."] },
+      end_safe2:{end:true,type:"safe",title:"A segunda camada segurou o golpe",
+        text:"Mesmo que a senha vaze em outro serviço — como de fato aconteceu no caso real — a autenticação em duas etapas impede que ela sozinha seja suficiente para um invasor entrar.",
+        lessons:["MFA neutraliza o risco de uma senha vazada, mesmo quando a vítima nem sabe que ela vazou.","Contas de acesso remoto para infraestrutura crítica deveriam exigir MFA de forma não-negociável."] }
+    }
+  },
+
+  equifax:{
+    title:"Nove semanas sem corrigir", category:"tech", level:1, mech:"Simulação: painel de atualizações + terminal de exploração",
+    real:"Caso real: Equifax, 2017",
+    role:"Você é administrador de sistemas responsável por aplicar atualizações de segurança.",
+    teaser:"Uma falha crítica é divulgada com correção disponível no mesmo dia. O que você faz com ela?",
+    start:"start",
+    nodes:{
+      start:{ tag:"6 de março de 2017 — boletim de segurança", text:"É divulgada uma falha crítica em um componente usado por um servidor web público da empresa. A correção já está disponível.",
+        choices:[
+          {label:"Colocar na fila normal de tarefas do trimestre", next:"exploit"},
+          {label:"Tratar como prioridade crítica e aplicar nos próximos dias", next:"end_safe1"},
+          {label:"Rodar uma varredura para confirmar quais servidores usam o componente antes de decidir", next:"scan"}
+        ]},
+      scan:{ tag:"dias depois", text:"A varredura não encontra o componente em nenhum servidor conhecido — mas o inventário de aplicações está desatualizado.",
+        choices:[{label:"Considerar suficiente e seguir para outras prioridades", next:"exploit"},{label:"Aplicar a correção em todos os servidores públicos conhecidos, por precaução", next:"end_safe2"}] },
+      exploit:{ tag:"meses depois", text:"",
+        widget:{ type:"terminal", next:"end_breach1", lines:[
+          "$ scanner automatizado varrendo a internet por hosts vulneráveis...",
+          "> alvo encontrado: servidor web público (Apache Struts, CVE-2017-5638)",
+          "$ enviando payload malicioso via cabeçalho HTTP...",
+          "> comando remoto executado com sucesso no servidor",
+          "$ consultando banco de dados de clientes diretamente...",
+          "> exportando registros — 143.000.000 linhas capturadas"
+        ]}},
+      end_breach1:{end:true,type:"breach",title:"Cento e quarenta e três milhões de pessoas, uma correção que existia",
+        text:"Foi isso, com poucos ajustes, que aconteceu com a Equifax em 2017. A vulnerabilidade crítica no framework Apache Struts (CVE-2017-5638) foi divulgada publicamente, com correção disponível, em 6 de março. A empresa só percebeu a invasão em 29 de julho — mais de nove semanas depois — quando dados de 143 milhões de pessoas já haviam sido acessados, incluindo números de seguro social e dados de cartão de crédito.",
+        lessons:["Uma vulnerabilidade crítica, uma vez pública, vira alvo de ataques automatizados em dias, não meses.","Um inventário de aplicações desatualizado impede até boas intenções de correção.","Políticas de prazo para falhas críticas só funcionam com visibilidade completa da infraestrutura."],
+        darkweb:{ intro:"Vazamentos desse tamanho costumam circular por muito tempo depois do anúncio oficial.", listings:[
+          {title:"Base de dados completa — 143M de registros", detail:"Nome, CPF/SSN, data de nascimento, endereço.", price:"Fragmentos vendidos separadamente"},
+          {title:"Consulta individual sob demanda", detail:"Busca por nome ou documento em troca de pagamento em criptomoeda.", price:"Poucos dólares por consulta"}
+        ]}},
+      end_safe1:{end:true,type:"safe",title:"A correção fechou a janela de risco",
+        text:"Tratar a atualização como prioridade crítica fecha a janela de exposição antes que ataques automatizados a explorem em massa.",
+        lessons:["O tempo entre a divulgação pública de uma falha e sua exploração em massa costuma ser curto.","Uma correção aplicada a tempo custa muito menos do que qualquer resposta a um vazamento em larga escala."] },
+      end_safe2:{end:true,type:"safe",title:"Corrigir mesmo sem certeza total venceu a lacuna do inventário",
+        text:"Aplicar a correção de forma ampla, mesmo sem confirmação perfeita, compensa exatamente a falha que permitiu o ataque real: um inventário incompleto.",
+        lessons:["Quando o inventário é incerto, tratar o pior cenário como verdadeiro é mais seguro do que confiar numa varredura incompleta."] }
+    }
+  },
+
+  capitalone:{
+    title:"O firewall que respondia demais", category:"tech", level:3, mech:"Simulação: terminal de exploração na nuvem",
+    real:"Caso real: Capital One, 2019",
+    role:"Você é engenheiro de nuvem responsável por um firewall de aplicação web (WAF) na AWS.",
+    teaser:"Nenhum e-mail, nenhuma ligação — só uma decisão de permissões num painel técnico.",
+    start:"start",
+    nodes:{
+      start:{ tag:"configuração de permissões do WAF", text:"O firewall que você administra precisa de permissões para funcionar. Você decide o escopo dentro da conta de nuvem.",
+        choices:[
+          {label:"Conceder leitura a todas as áreas de armazenamento, para nunca mais mexer nisso", next:"ssrf"},
+          {label:"Conceder apenas as permissões mínimas necessárias", next:"end_safe1"},
+          {label:"Perguntar à equipe de segurança o escopo recomendado antes de aplicar", next:"consult"}
+        ]},
+      consult:{ tag:"minutos depois", text:"A equipe de segurança recomenda o princípio do menor privilégio, sem hesitar.",
+        choices:[{label:"Aplicar a recomendação", next:"end_safe1"}] },
+      ssrf:{ tag:"meses depois", text:"",
+        widget:{ type:"terminal", next:"end_breach1", lines:[
+          "$ curl \"http://waf-interno/proxy?url=http://169.254.169.254/latest/meta-data/iam/security-credentials/\"",
+          "> nome-da-role-encontrado",
+          "$ curl \"http://169.254.169.254/latest/meta-data/iam/security-credentials/nome-da-role\"",
+          "> AccessKeyId: AKIA********  SecretAccessKey: ********",
+          "$ aws s3 ls --profile roubado",
+          "> 700+ áreas de armazenamento listadas",
+          "$ aws s3 sync s3://dados-clientes ./saida --profile roubado",
+          "> baixando... 106.000.000 registros copiados"
+        ]}},
+      end_breach1:{end:true,type:"breach",title:"O firewall que abriu a própria porta",
+        text:"Isso reproduz, em essência, o ataque sofrido pela Capital One em 2019. O firewall de aplicação web da empresa, na AWS, tinha permissões muito além do necessário. Uma ex-funcionária da própria AWS, Paige Thompson, explorou uma vulnerabilidade de SSRF nesse firewall para consultar o serviço interno de metadados da nuvem e obter credenciais temporárias válidas. Com elas, listou e leu mais de 700 áreas de armazenamento e extraiu dados de mais de 100 milhões de clientes e candidatos a cartão de crédito — chegando a publicar parte do material em um repositório público no GitHub, o que levou à sua identificação.",
+        lessons:["A causa raiz não foi engenharia social: foi uma vulnerabilidade técnica combinada com permissões excessivas.","O princípio do menor privilégio limita o estrago mesmo quando uma vulnerabilidade técnica é explorada.","Serviços de metadados de nuvem mal protegidos podem virar um atalho direto para credenciais privilegiadas."],
+        darkweb:{ intro:"Parte destes dados chegou a ser publicada abertamente antes mesmo de ser vendida.", listings:[
+          {title:"Dump publicado em repositório de código", detail:"Arquivos com dados de clientes hospedados publicamente antes da remoção.", price:"Acesso livre até a remoção"},
+          {title:"Pacote 'verificado' revendido em fóruns", detail:"Cópias do vazamento original redistribuídas por terceiros.", price:"Alguns dólares em criptomoeda"}
+        ]}},
+      end_safe1:{end:true,type:"safe",title:"Permissão mínima, dano contido",
+        text:"Com o firewall restrito às permissões que realmente precisa, mesmo uma futura falha técnica encontraria muito menos para explorar — a diferença de escopo que separa este desfecho do ataque real.",
+        lessons:["O princípio do menor privilégio deveria ser o padrão inicial, não uma correção posterior.","Uma vulnerabilidade técnica é quase inevitável em algum momento — o que se controla é o tamanho do estrago que ela pode causar."] }
+    }
+  },
+
+  smishing:{
+    title:"A página idêntica", category:"human", level:3, mech:"Simulação: SMS + página de login + painel do atacante",
+    real:"Caso real: campanha \"0ktapus\" contra Twilio, Cloudflare e outras, 2022",
+    role:"Você trabalha em uma empresa que usa um provedor de identidade único para login.",
+    teaser:"A página é pixel a pixel idêntica à verdadeira. Veja seus dados chegarem ao painel de quem os rouba.",
+    start:"start",
+    nodes:{
+      start:{ tag:"SMS recebido no celular pessoal", text:"",
+        widget:{ type:"sms", messages:[{from:"Provedor de Identidade", text:"Sua senha corporativa expira hoje. Atualize agora em:", link:"identity-portal-login.com/atualizar"}],
+          actions:[{label:"Tocar no link", next:"loginwidget"},{label:"Comparar o domínio com o oficial antes", next:"domainCheck"},{label:"Ignorar e reportar ao time de segurança", next:"end_safe1"}]
+        }},
+      domainCheck:{ tag:"comparando o endereço", text:"O domínio foi registrado menos de uma hora antes da mensagem chegar, e é quase idêntico ao oficial — a diferença é sutil o bastante para passar despercebida numa checagem rápida pelo celular.",
+        choices:[{label:"Mesmo com a diferença, preencher os dados — visualmente é idêntica à real", next:"loginwidget"},{label:"A diferença já é suficiente para não prosseguir", next:"end_safe1"}] },
+      loginwidget:{ tag:"na página aberta pelo celular", text:"",
+        widget:{ type:"login", urlBar:"identity-portal-login.com/atualizar", brand:"Atualizar senha corporativa",
+          note:"Visualmente idêntica à página real da empresa.", submitNext:"otpNode" } },
+      otpNode:{ tag:"logo em seguida", text:"A página também pede o código de verificação (OTP) que acabou de chegar por outro aplicativo.",
+        choices:[{label:"Digitar o código de verificação também", next:"feedreveal"},{label:"Estranhar o pedido do código logo após a senha, e fechar a página", next:"end_partial1"}] },
+      feedreveal:{ tag:"", text:"",
+        widget:{ type:"feed", next:"end_breach1", events:[
+          "Novo envio recebido do formulário falso",
+          "usuário: capturado",
+          "senha: capturada",
+          "código de verificação: capturado (expira em 30s)",
+          "retransmitindo credenciais para o sistema real...",
+          "login realizado com sucesso no sistema real"
+        ]}},
+      end_breach1:{end:true,type:"breach",title:"Um phishing rápido demais para o código de verificação",
+        text:"Este é o funcionamento da campanha de smishing conhecida como \"0ktapus\", que atingiu dezenas de empresas em 2022, incluindo Twilio, DoorDash e Mailchimp. Os atacantes enviavam SMS com links para páginas de login falsas, visualmente idênticas às verdadeiras, hospedadas em domínios registrados poucos minutos antes do disparo. Os dados digitados eram retransmitidos em tempo real para os atacantes, que os usavam imediatamente para entrar no sistema real antes que o código expirasse.",
+        lessons:["Uma página idêntica à original, com domínio quase perfeito, pode passar despercebida mesmo por profissionais de segurança.","Códigos de verificação por SMS ou aplicativo não protegem contra um golpe que os intercepta em tempo real.","A defesa mais eficaz não depende do julgamento humano no momento do ataque — precisa estar embutida na forma como o login é feito."]},
+      end_partial1:{end:true,type:"partial",title:"Senha exposta, mas o login não se completou",
+        text:"Recusar fornecer o código impede que o login seja concluído — mas a senha já deve ser considerada comprometida. Na campanha real de 2022, a Cloudflare recebeu mensagens quase idênticas: três funcionários chegaram a digitar suas credenciais na página falsa, mas a empresa não foi comprometida, porque o acesso a todos os sistemas internos exigia uma chave de segurança física (padrão FIDO2), que se recusa a autenticar em qualquer domínio diferente do verdadeiro.",
+        lessons:["Uma hesitação de última hora pode evitar o pior, mas não desfaz o fato de que a senha já vazou.","Chaves de segurança físicas (FIDO2/hardware) são hoje a defesa mais confiável contra phishing em tempo real, justamente por não dependerem do julgamento humano no momento do ataque."]},
+      end_safe1:{end:true,type:"safe",title:"Reconhecido antes de qualquer dado ser digitado",
+        text:"Ao não interagir com a mensagem, você elimina o primeiro passo do ataque antes mesmo dele ter chance de funcionar — a diferença, em 2022, entre empresas atingidas pela campanha que vazaram dados e as que não vazaram.",
+        lessons:["Comparar o domínio de uma página de login com o oficial, mesmo rapidamente, já é uma defesa eficaz.","Mensagens sobre senha prestes a expirar, recebidas por SMS em vez do canal oficial, merecem desconfiança por padrão."]}
+    }
+  },
+
+  talktalk:{
+    title:"A injeção que ninguém corrigiu", category:"tech", level:2, mech:"Simulação: teste você mesmo a injeção de SQL",
+    real:"Caso real: TalkTalk, Reino Unido, outubro de 2015",
+    role:"Você é responsável pela segurança de páginas web herdadas de uma aquisição antiga.",
+    teaser:"Um formulário de login de verdade. Tente entrar — ou tente quebrá-lo.",
+    start:"start",
+    nodes:{
+      start:{ tag:"três páginas antigas, herdadas de uma aquisição", text:"Essas páginas já foram atacadas duas vezes este ano com a mesma técnica, mas ninguém investigou a fundo. Uma correção para o banco de dados desatualizado está disponível.",
+        choices:[
+          {label:"Registrar como baixa prioridade — as páginas quase não recebem tráfego", next:"demo"},
+          {label:"Aplicar a correção e desativar as páginas herdadas que não são mais necessárias", next:"end_safe1"},
+          {label:"Monitorar ativamente essas páginas por novas tentativas, mesmo sem aplicar a correção ainda", next:"monitor"}
+        ]},
+      monitor:{ tag:"semanas depois", text:"O monitoramento detecta uma nova tentativa suspeita nas mesmas páginas. Dessa vez, a equipe reage a tempo e bloqueia o IP de origem antes de qualquer extração de dados.",
+        choices:[{label:"Usar esse tempo ganho para aplicar a correção definitiva", next:"end_safe2"}] },
+      demo:{ tag:"página de login herdada — sistema legado", text:"Esta é a mesma página usada no ataque real de 2015. Tente entrar com um usuário e senha comuns — ou, se souber, teste uma injeção de SQL no campo de usuário.",
+        widget:{ type:"sqli", hint:"' OR '1'='1' -- ", successNext:"end_breach1" } }
+      ,
+      end_breach1:{end:true,type:"breach",title:"A injeção que abriu 157 mil cadastros",
+        text:"Isso reproduz o ataque real sofrido pela TalkTalk em outubro de 2015. Hackers usaram uma ferramenta automatizada (SQLmap) para encontrar uma falha de SQL injection em três páginas web herdadas da aquisição de outra empresa (Tiscali). O banco de dados por trás dessas páginas rodava um software desatualizado, sem suporte do fabricante, para o qual já existia uma correção — nunca aplicada. A mesma falha já havia sido explorada duas vezes antes naquele ano, em julho e setembro, sem que a empresa investigasse a fundo. No ataque de outubro, dados pessoais de 156.959 clientes foram acessados, incluindo nome, endereço, data de nascimento e, em quase 16 mil casos, dados bancários. A TalkTalk foi multada em £400.000 pelo órgão regulador britânico por não ter implementado medidas básicas de segurança.",
+        lessons:["Injeção de SQL ocorre quando dados digitados pelo usuário são inseridos diretamente em uma consulta ao banco de dados, sem validação — permitindo alterar o significado da consulta.","Infraestrutura herdada de aquisições e fusões é um dos pontos cegos mais comuns em segurança: 'não sabíamos que essa página ainda existia' foi parte da explicação oficial do incidente.","Duas tentativas de ataque anteriores, ignoradas, foram um alerta claro de que a falha continuava explorável."],
+        darkweb:{ intro:"Dados de clientes de telecomunicações costumam ser usados para golpes de identidade em massa.", listings:[
+          {title:"Cadastros completos com dados bancários", detail:"Nome, endereço, data de nascimento e dados de conta.", price:"Vendido em lotes"},
+          {title:"Listas para golpes de suporte técnico", detail:"Dados usados para ligações fraudulentas se passando pela operadora.", price:"Uso interno de grupos de fraude"}
+        ]}},
+      end_safe1:{end:true,type:"safe",title:"Sem página vulnerável, sem injeção possível",
+        text:"Aplicar a correção e desativar páginas que não são mais necessárias elimina a superfície de ataque por completo — exatamente o que a TalkTalk deixou de fazer em 2015, mesmo após dois avisos anteriores.",
+        lessons:["Sistemas herdados de aquisições precisam ser inventariados e avaliados, não apenas deixados no ar.","Consultas parametrizadas e validação de entrada eliminam a injeção de SQL na raiz."]},
+      end_safe2:{end:true,type:"safe",title:"O monitoramento comprou tempo para a correção certa",
+        text:"Reagir a uma nova tentativa a tempo evita o pior, mas a causa raiz — o software desatualizado — só deixa de ser um risco quando a correção é aplicada de fato.",
+        lessons:["Monitoramento ativo é uma camada de defesa útil, mas não substitui corrigir a vulnerabilidade de origem.","Duas tentativas anteriores da mesma falha já deveriam ter acelerado a correção, independentemente do monitoramento."]}
+    }
+  },
+
+  redline:{
+    title:"O ativador que não ativava nada", category:"human", level:2, mech:"Simulação: download e execução de um .exe",
+    real:"Caso real: campanhas do malware RedLine Stealer via YouTube, documentadas desde 2020",
+    role:"Você quer usar um programa pago sem pagar por ele.",
+    teaser:"Baixe o arquivo, dê os cliques, e veja o que realmente estava dentro dele.",
+    start:"start",
+    nodes:{
+      start:{ tag:"vídeo do YouTube — \"como ativar de graça\"", text:"Um vídeo promete ativar um software pago gratuitamente. A descrição tem um link para um arquivo compactado com senha, hospedado fora do YouTube.",
+        widget:{ type:"download", fileName:"Ativador_2024.rar → Ativador.exe",
+          actions:[
+            {label:"Executar Ativador.exe", next:"smartscreen1"},
+            {label:"Escanear com antivírus antes de executar", next:"scanresult"},
+            {label:"Não executar, apagar o arquivo", next:"end_safe1"}
+          ]}},
+      scanresult:{ tag:"resultado do antivírus", text:"O antivírus não identifica nenhuma ameaça conhecida — o arquivo foi compilado há poucos dias e ainda não está nas listas de assinaturas.",
+        choices:[{label:"Mesmo assim executar, já que o antivírus não encontrou nada", next:"smartscreen1"},{label:"Não arriscar — apagar o arquivo mesmo sem detecção", next:"end_safe1"}] },
+      smartscreen1:{ tag:"ao executar o arquivo", text:"",
+        widget:{ type:"smartscreen", title:"O Windows protegeu seu PC",
+          message:"Um aplicativo não reconhecido impediu sua inicialização. Executar mesmo assim pode colocar seu PC em risco.",
+          proceedLabel:"Executar assim mesmo", cancelLabel:"Não executar",
+          proceedNext:"term1", cancelNext:"end_safe2" } },
+      term1:{ tag:"em segundo plano, nos primeiros segundos", text:"",
+        widget:{ type:"terminal", next:"end_breach1", lines:[
+          "$ processo iniciado em segundo plano...",
+          "[stealer] varrendo navegadores instalados por senhas salvas...",
+          "[stealer] extraindo cookies de sessão (contornam a exigência de login novamente)",
+          "[stealer] varrendo carteiras de criptomoeda e clientes de FTP/VPN...",
+          "[stealer] empacotando dados coletados...",
+          "[rede] enviando pacote para o painel do operador — concluído"
+        ]}},
+      end_breach1:{end:true,type:"breach",title:"O ativador que ativou um ladrão de senhas",
+        text:"Isso reproduz um padrão real e amplamente documentado: o malware RedLine Stealer, distribuído desde 2020 através de vídeos no YouTube que prometem ativadores, cracks e cheats de jogos gratuitos. Uma vez executado, ele varre navegadores em busca de senhas salvas, coleta cookies de sessão (que permitem entrar em contas sem precisar da senha, contornando até a autenticação em duas etapas em alguns casos), examina carteiras de criptomoeda e credenciais de VPN/FTP, e envia tudo para um painel controlado pelo operador — tipicamente em minutos. Pesquisadores já documentaram variantes que chegam a publicar novos vídeos maliciosos nos próprios canais do YouTube das vítimas, para se espalhar ainda mais.",
+        lessons:["A ausência de detecção por antivírus não significa ausência de ameaça — malware novo pode não estar em nenhuma lista de assinaturas ainda.","O aviso do sistema operacional ('aplicativo não reconhecido') é um sinal de alerta real, não uma burocracia a ser ignorada.","Senhas salvas no navegador e cookies de sessão são alvos diretos desse tipo de malware — softwares piratas ou 'ativadores' são um dos vetores de distribuição mais comuns."]},
+      end_safe1:{end:true,type:"safe",title:"Nenhum arquivo executado, nenhum dado roubado",
+        text:"Evitar por completo softwares piratas e 'ativadores' de origem desconhecida elimina esse vetor de infecção, que depende inteiramente da vítima decidir executar o arquivo.",
+        lessons:["Canais de distribuição não oficiais (vídeos, fóruns, arquivos compactados com senha) são exatamente onde esse tipo de malware se esconde.","A promessa de obter algo pago de graça é, historicamente, um dos iscas mais eficazes já documentados."]},
+      end_safe2:{end:true,type:"safe",title:"O aviso do sistema foi suficiente",
+        text:"Respeitar o alerta do sistema operacional interrompe a execução do malware antes que ele tenha qualquer chance de agir.",
+        lessons:["Avisos de 'aplicativo não reconhecido' existem justamente para arquivos baixados fora de canais oficiais.","Contornar esse tipo de aviso deveria ser exceção rara e justificada, nunca hábito."]}
+    }
+  },
+
+  phishbuilder:{
+    title:"Montando a isca", category:"human", level:2, perspective:"attacker",
+    mech:"Simulação: monte seu próprio e-mail de phishing",
+    real:"Baseado em padrões reais de campanhas de phishing corporativo — os mesmos elementos vistos nos casos da RSA (2011) e da Twitter (2020).",
+    role:"Desta vez você está do outro lado: monte um e-mail de phishing e veja se o alvo cai.",
+    teaser:"Escolha remetente, gancho psicológico e chamada para ação. A combinação decide se o golpe funciona.",
+    start:"start",
+    nodes:{
+      start:{ tag:"montando o ataque", text:"Escolha uma opção em cada categoria abaixo e envie o e-mail para um alvo simulado.",
+        widget:{ type:"builder", submitLabel:"Enviar o e-mail para o alvo",
+          groups:[
+            { label:"Remetente", options:[
+              {text:"Endereço genérico e aleatório (ex: suporte223@mailbox.ru)", score:0, note:"Remetente aleatório — fácil de notar como estranho, poucos golpes profissionais usam isso."},
+              {text:"Domínio quase idêntico ao da empresa (ex: corp0nex-ti.com)", score:2, note:"Domínio quase idêntico — passa despercebido numa leitura rápida, a técnica usada contra a RSA."},
+              {text:"Nome de exibição igual ao de um colega real, com o endereço verdadeiro escondido", score:3, note:"Nome de exibição falsificado — a maioria dos clientes de e-mail mostra só o nome, não o endereço completo."}
+            ]},
+            { label:"Gancho psicológico no assunto", options:[
+              {text:"Assunto neutro: 'Documento em anexo'", score:0, note:"Assunto neutro — não cria nenhuma pressão para agir rápido."},
+              {text:"Urgência: 'Ação necessária nas próximas 2 horas'", score:2, note:"Urgência — reduz o tempo que a vítima gasta analisando, o gatilho usado contra a RSA."},
+              {text:"Autoridade + urgência: 'Diretoria — aprovação necessária ainda hoje'", score:3, note:"Autoridade combinada com urgência — dois gatilhos psicológicos ao mesmo tempo, dificultam ainda mais a análise racional."}
+            ]},
+            { label:"Chamada para ação", options:[
+              {text:"Pedir a senha diretamente na resposta do e-mail", score:0, note:"Pedido direto de senha — padrão raro e muito reconhecível, a maioria dos golpes evita isso por ser óbvio."},
+              {text:"Link para um domínio novo, sem relação com a empresa", score:1, note:"Domínio sem relação — levanta suspeita numa checagem rápida do endereço."},
+              {text:"Link com subdomínio de fachada usando o nome real da empresa antes do domínio verdadeiro", score:3, note:"Subdomínio de fachada — muito eficaz em celulares, onde o endereço completo raramente aparece."}
+            ]}
+          ],
+          thresholds:[{min:8,next:"end_breach1"},{min:4,next:"end_partial1"},{min:0,next:"end_safe1"}]
+        }},
+      end_breach1:{end:true,type:"breach",dynamicFeedback:true,title:"O alvo caiu",
+        text:"Sua combinação reuniu um disfarce de remetente convincente, um gatilho psicológico forte e uma chamada para ação sutil — a mesma combinação por trás de ataques reais como os da RSA Security (2011) e da Twitter (2020). O alvo simulado preencheu as credenciais sem verificar nada.",
+        lessons:["Nenhum desses elementos, isolado, é sofisticado — a eficácia vem da combinação.","A defesa mais confiável não depende de identificar cada sinal individualmente, mas de verificar por um canal independente sempre que uma mensagem pede uma ação sensível.","Reconhecer os elementos de um golpe ao montá-lo ajuda a identificá-los quando alguém tenta o mesmo com você."]},
+      end_partial1:{end:true,type:"partial",dynamicFeedback:true,title:"O alvo hesitou",
+        text:"Sua combinação teve pontos fracos — algum elemento não foi convincente o suficiente. O alvo simulado desconfiou e não completou a ação, mas chegou a considerar por um momento.",
+        lessons:["Mesmo um golpe parcialmente malfeito pode gerar hesitação perigosa — por isso qualquer sinal de dúvida já deveria levar à verificação, não à ação.","Elementos fracos (endereço genérico, chamada para ação óbvia) são os primeiros sinais que o treinamento de conscientização ensina a reconhecer."]},
+      end_safe1:{end:true,type:"safe",dynamicFeedback:true,title:"O alvo reportou na hora",
+        text:"Sua combinação reuniu justamente os elementos mais reconhecíveis de golpes malfeitos — o alvo simulado identificou o e-mail como suspeito e reportou imediatamente, sem interagir.",
+        lessons:["Golpes com remetente óbvio, sem urgência e com pedidos diretos e estranhos são os mais fáceis de barrar.","Isso não significa que golpes mais sofisticados sejam impossíveis de identificar — apenas que exigem mais atenção."]}
+    }
+  },
+
+  osintcall:{
+    title:"Reconhecimento antes de ligar", category:"human", level:3, perspective:"attacker",
+    mech:"Simulação: colete informações públicas e monte o pretexto",
+    real:"Baseado na metodologia real de reconhecimento (OSINT) documentada em investigações de engenharia social, incluindo o ataque à Twitter em 2020.",
+    role:"Antes de qualquer contato, você faz o reconhecimento — é isso que separa um golpe genérico de um perfeito.",
+    teaser:"Escolha até 2 informações públicas para usar no seu pretexto. Nem toda informação coletada ajuda.",
+    start:"start",
+    nodes:{
+      start:{ tag:"reconhecimento (OSINT)", text:"Estas são fontes públicas sobre o alvo. Escolha até duas informações para usar na ligação — escolher a informação errada pode atrapalhar mais do que ajudar.",
+        widget:{ type:"osint", maxPick:2, proceedLabel:"Ligar usando essas informações",
+          sources:[
+            {title:"Perfil profissional público", body:"\"Mais um dia de trabalho remoto, ainda brigando com a VPN.\" — publicado há 2 dias por um funcionário do suporte.", fact:"o alvo mencionou publicamente problemas reais com a VPN", quality:3},
+            {title:"Blog da empresa", body:"\"Aviso: atualização do sistema de VPN prevista para o fim deste mês, pode causar instabilidades temporárias.\"", fact:"uma atualização de VPN real foi anunciada publicamente", quality:3},
+            {title:"Página \"Sobre nós\" do site", body:"Lista os nomes da equipe de TI, incluindo \"Carlos Mendes — Suporte Técnico Nível 2\".", fact:"o nome real de um técnico de TI (Carlos Mendes)", quality:2},
+            {title:"Post de aniversário da empresa", body:"\"Hoje comemoramos 12 anos de história!\" — publicado no perfil oficial da empresa.", fact:"a empresa completou 12 anos", quality:0}
+          ],
+          thresholds:[{min:5,next:"end_breach1"},{min:2,next:"end_partial1"},{min:0,next:"end_safe1"}]
+        }},
+      end_breach1:{end:true,type:"breach",dynamicFeedback:true,title:"O pretexto convenceu",
+        text:"Usar detalhes específicos e verificáveis — como uma atualização de VPN real, já mencionada publicamente pela própria empresa e por um colega — tornou a ligação quase impossível de distinguir de um chamado legítimo. Foi esse tipo de reconhecimento prévio que tornou convincente o ataque de vishing contra a Twitter em 2020: os atacantes sabiam, antes de ligar, que a equipe remota realmente enfrentava problemas de VPN.",
+        lessons:["Informações públicas, mesmo pequenas e aparentemente inofensivas, podem ser combinadas para construir um pretexto extremamente convincente.","Quanto mais específico e verificável o detalhe usado, mais difícil fica desconfiar da ligação só pelo conteúdo.","A defesa que funciona mesmo contra um pretexto perfeito é a mesma de sempre: verificar por um canal independente, nunca pelo que a própria ligação oferece."]},
+      end_partial1:{end:true,type:"partial",dynamicFeedback:true,title:"A ligação soou quase certa",
+        text:"Você usou pelo menos uma informação relevante, mas a combinação não foi específica o suficiente para eliminar toda a desconfiança do alvo simulado.",
+        lessons:["Um pretexto parcialmente convincente ainda é perigoso — por isso a verificação por canal independente deve ser padrão, não uma exceção reservada a 'casos suspeitos'."]},
+      end_safe1:{end:true,type:"safe",dynamicFeedback:true,title:"A ligação soou genérica ou fora de contexto",
+        text:"Sem informações específicas e relevantes — ou usando um detalhe irrelevante, como a data de aniversário da empresa — o pretexto soou vago ou estranho, e o alvo simulado desconfiou de imediato.",
+        lessons:["Detalhes verdadeiros, mas irrelevantes ao pedido, podem soar tão suspeitos quanto nenhuma informação.","Reconhecimento malfeito ainda protege organizações de ataques de engenharia social — mas não se pode contar apenas com isso."]}
+    }
+  }
+};
+
+let currentScenarioId = null;
+let currentNodeId = null;
+let journalTrail = [];
+const completed = new Set();
+let socPlayed = false;
+let quizPlayed = false;
+let lastSocScore = null;
+let lastQuizScore = null;
+let hadSavedProgress = false;
+const STORAGE_KEY = 'salacasos_progresso_v1';
+let decisionLog = [];
+function logDecision(quality, label, source){
+  decisionLog.push({quality, label, source, t: decisionLog.length+1});
+  if(document.getElementById('curve-sec') && document.getElementById('curve-sec').classList.contains('active')) renderDecisionChart();
+  saveProgress();
+}
+
+function saveProgress(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      completed: [...completed],
+      decisionLog,
+      lastSocScore,
+      lastQuizScore
+    }));
+  }catch(e){ /* localStorage indisponível (modo privado, restrições do navegador etc.) — segue sem persistência */ }
+}
+
+function loadProgress(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return false;
+    const data = JSON.parse(raw);
+    if(Array.isArray(data.completed)) data.completed.forEach(id=>{ if(SCENARIOS[id]) completed.add(id); });
+    if(Array.isArray(data.decisionLog)) decisionLog = data.decisionLog;
+    if(typeof data.lastSocScore === 'number') lastSocScore = data.lastSocScore;
+    if(typeof data.lastQuizScore === 'number') lastQuizScore = data.lastQuizScore;
+    return completed.size > 0 || decisionLog.length > 0 || lastSocScore !== null || lastQuizScore !== null;
+  }catch(e){ return false; }
+}
+
+function clearAllProgress(){
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  completed.clear(); decisionLog = []; lastSocScore = null; lastQuizScore = null;
+  socPlayed = false; socScore = 0; quizPlayed = false; score = 0; answered = 0;
+  socIndex = 0;
+  document.getElementById('restoreBanner').innerHTML = '';
+  updateProgressDashboard();
+  renderScenarioGrid();
+  if(typeof renderSoc === 'function') renderSoc();
+  if(typeof renderDecisionChart === 'function') renderDecisionChart();
+  const scoreBox = document.getElementById('scoreBox');
+  if(scoreBox) scoreBox.classList.remove('show');
+  const finalSummary = document.getElementById('finalSummary');
+  if(finalSummary) finalSummary.innerHTML = '';
+}
+const LEVEL_LABEL = {1:'NÍVEL 1 · ÓBVIO', 2:'NÍVEL 2 · ATENÇÃO', 3:'NÍVEL 3 · SUTIL'};
+
+function esc(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+function renderScenarioGrid(){
+  const grid = document.getElementById('scenarioGrid');
+  grid.innerHTML = '';
+  Object.entries(SCENARIOS).forEach(([id, sc])=>{
+    const card = document.createElement('div');
+    card.className = 'scenario-card reveal';
+    const catPill = sc.category === 'human' ? '<span class="pill human">FALHA HUMANA</span>' : '<span class="pill tech">FALHA TÉCNICA</span>';
+    const lvlPill = `<span class="pill lvl${sc.level}">${LEVEL_LABEL[sc.level]}</span>`;
+    const perspPill = sc.perspective === 'attacker' ? '<span class="pill attacker">PERSPECTIVA DO ATACANTE</span>' : '';
+    card.innerHTML = `
+      <div class="pillrow">${catPill}${lvlPill}${perspPill}${completed.has(id) ? '<span class="completed-badge">explorado</span>' : ''}</div>
+      <h3>${sc.title}</h3>
+      <p>${sc.teaser}</p>
+      <span class="mech">${sc.mech}</span>
+      <span class="realcase">${sc.real}</span>
+      <span class="role">${sc.role}</span>
+      <button class="startbtn" data-start="${id}">Iniciar simulação</button>
+    `;
+    grid.appendChild(card);
+  });
+  grid.querySelectorAll('[data-start]').forEach(b=> b.addEventListener('click', ()=>enterStory(b.dataset.start)));
+  playReveal(grid.querySelectorAll('.reveal'));
+}
+
+function playReveal(nodeList, baseDelay){
+  baseDelay = baseDelay || 35;
+  requestAnimationFrame(()=>{
+    nodeList.forEach((el, i)=>{
+      el.style.transitionDelay = (i*baseDelay)+'ms';
+      requestAnimationFrame(()=> el.classList.add('in-view'));
+    });
+  });
+}
+hadSavedProgress = loadProgress();
+renderScenarioGrid();
+
+function enterStory(id){
+  currentScenarioId = id; currentNodeId = SCENARIOS[id].start; journalTrail = [];
+  document.getElementById('scenarioGrid').style.display = 'none';
+  document.getElementById('storyArea').style.display = 'block';
+  document.getElementById('simTitle').textContent = SCENARIOS[id].title;
+  document.getElementById('simLede').textContent = SCENARIOS[id].real + ' — interaja com a simulação para ver como o caso se desenrola.';
+  document.getElementById('storyRole').textContent = SCENARIOS[id].role;
+  const banner = document.getElementById('perspBanner');
+  if(banner){
+    if(SCENARIOS[id].perspective === 'attacker'){ banner.style.display='block'; banner.textContent = 'Você está no papel de quem tenta quebrar a confidencialidade — para reconhecer os sinais quando alguém tentar isso com você.'; }
+    else banner.style.display = 'none';
+  }
+  renderNode();
+}
+function exitStory(){
+  document.getElementById('scenarioGrid').style.display = 'grid';
+  document.getElementById('storyArea').style.display = 'none';
+  document.getElementById('simTitle').textContent = 'Escolha um caso';
+  document.getElementById('simLede').textContent = 'Dez incidentes e exercícios, cada um com uma interface diferente para você interagir de verdade — incluindo dois em que você assume o papel de quem ataca.';
+  renderScenarioGrid();
+}
+function renderJournal(){ document.getElementById('journal').innerHTML = journalTrail.map(s=>`<span class="step">${esc(s)}</span>`).join(''); }
+function goNext(next){ journalTrailPush(); currentNodeId = next; renderNode(); window.scrollTo({top: document.getElementById('storyArea').offsetTop - 20, behavior:'smooth'}); }
+function journalTrailPush(label){ if(label) journalTrail.push(label.length>40?label.slice(0,40)+'…':label); }
+
+function renderNode(){
+  const node = SCENARIOS[currentScenarioId].nodes[currentNodeId];
+  renderJournal();
+  const outcomeArea = document.getElementById('outcomeArea');
+  const widgetArea = document.getElementById('widgetArea');
+  const choicesArea = document.getElementById('choicesArea');
+  const storyBox = document.getElementById('storyBox');
+  outcomeArea.innerHTML = ''; widgetArea.innerHTML = ''; choicesArea.innerHTML = '';
+
+  if(node.end){
+    completed.add(currentScenarioId);
+    updateProgressDashboard();
+    const q = node.type === 'safe' ? 1 : (node.type === 'partial' ? 0.5 : 0);
+    logDecision(q, SCENARIOS[currentScenarioId].title+' — '+node.title, 'caso');
+    storyBox.style.display = 'none';
+    const div = document.createElement('div');
+    div.className = 'outcome ' + node.type;
+    const verdictLabel = node.type === 'breach' ? 'Confidencialidade quebrada — foi o que aconteceu de verdade' : (node.type === 'safe' ? 'Ataque neutralizado' : 'Resultado parcial');
+    let darkwebBtn = '';
+    if(node.darkweb) darkwebBtn = `<button class="btn" id="darkwebBtn">Ver o que acontece com esses dados depois</button>`;
+    let choicesBlock = '';
+    if(node.dynamicFeedback && dynamicFeedback.length){
+      choicesBlock = `<b style="font-size:.8rem; color:var(--text-dim);">SUAS ESCOLHAS</b><ul class="lessons">${dynamicFeedback.map(l=>`<li>${esc(l)}</li>`).join('')}</ul>`;
+    }
+    div.innerHTML = `
+      <div class="verdict">${verdictLabel}</div>
+      <h3>${node.title}</h3>
+      <p class="exp">${node.text}</p>
+      ${choicesBlock}
+      <b style="font-size:.8rem; color:var(--text-dim);">O QUE ISSO ENSINA</b>
+      <ul class="lessons">${node.lessons.map(l=>`<li>${l}</li>`).join('')}</ul>
+      <div id="darkwebPanel"></div>
+      <div class="outcome-actions">
+        <button class="btn primary" id="retryBtn">Tentar outro caminho neste caso</button>
+        ${darkwebBtn}
+        <button class="btn" id="otherBtn">Ver outros casos</button>
+      </div>
+    `;
+    outcomeArea.appendChild(div);
+    document.getElementById('retryBtn').addEventListener('click', ()=>enterStory(currentScenarioId));
+    document.getElementById('otherBtn').addEventListener('click', exitStory);
+    if(node.darkweb){
+      document.getElementById('darkwebBtn').addEventListener('click', ()=>{
+        const panel = document.getElementById('darkwebPanel');
+        if(panel.dataset.open === '1'){ panel.innerHTML=''; panel.dataset.open='0'; document.getElementById('darkwebBtn').textContent='Ver o que acontece com esses dados depois'; return; }
+        panel.dataset.open = '1';
+        document.getElementById('darkwebBtn').textContent = 'Fechar';
+        panel.innerHTML = `
+          <div class="darkweb-note">Reconstrução ilustrativa e genérica — não é um site real, não contém links, e não deve ser lida como instrução de acesso a nada.</div>
+          <p style="font-size:.86rem; color:var(--text-dim); margin-bottom:10px;">${node.darkweb.intro}</p>
+          ${node.darkweb.listings.map(l=>`<div class="listing-card"><div class="lt">${l.title}</div><div class="ld">${l.detail}</div><div class="lp">${l.price}</div></div>`).join('')}
+        `;
+      });
+    }
+    return;
+  }
+
+  if(node.widget){
+    storyBox.style.display = node.text ? 'block' : 'none';
+    document.getElementById('storyTag').textContent = node.tag || 'SITUAÇÃO';
+    document.getElementById('storyText').textContent = node.text || '';
+    renderWidget(node.widget, widgetArea);
+    return;
+  }
+
+  storyBox.style.display = 'block';
+  document.getElementById('storyTag').textContent = node.tag || 'SITUAÇÃO';
+  document.getElementById('storyText').textContent = node.text;
+  node.choices.forEach(choice=>{
+    const b = document.createElement('button');
+    b.className = 'choice-btn';
+    b.innerHTML = '<span class="arrow">→</span>' + esc(choice.label);
+    b.addEventListener('click', ()=>{ journalTrailPush(choice.label); currentNodeId = choice.next; renderNode(); window.scrollTo({top: document.getElementById('storyArea').offsetTop - 20, behavior:'smooth'}); });
+    choicesArea.appendChild(b);
+  });
+}
+
+/* ================= WIDGET RENDERERS ================= */
+function renderWidget(w, area){
+  if(w.type === 'email') return renderEmailWidget(w, area);
+  if(w.type === 'login') return renderLoginWidget(w, area);
+  if(w.type === 'call') return renderCallWidget(w, area);
+  if(w.type === 'sms') return renderSmsWidget(w, area);
+  if(w.type === 'smartscreen') return renderSmartscreenWidget(w, area);
+  if(w.type === 'terminal') return renderTerminalWidget(w, area);
+  if(w.type === 'sqli') return renderSqliWidget(w, area);
+  if(w.type === 'download') return renderDownloadWidget(w, area);
+  if(w.type === 'feed') return renderFeedWidget(w, area);
+  if(w.type === 'builder') return renderBuilderWidget(w, area);
+  if(w.type === 'osint') return renderOsintWidget(w, area);
+}
+
+let dynamicFeedback = [];
+function pickThreshold(score, thresholds){
+  const sorted = [...thresholds].sort((a,b)=>b.min-a.min);
+  for(const t of sorted){ if(score >= t.min) return t.next; }
+  return sorted[sorted.length-1].next;
+}
+
+function goTo(next){ journalTrailPush(); currentNodeId = next; renderNode(); window.scrollTo({top: document.getElementById('storyArea').offsetTop - 20, behavior:'smooth'}); }
+
+function renderEmailWidget(w, area){
+  const attHtml = w.attachment ? `<div class="attachment-chip" id="attBtn">${esc(w.attachment.name)}</div>` : '';
+  area.innerHTML = `
+    <div class="email-app">
+      <div class="bar"><span>${esc(w.folderTag)}</span><span>1 mensagem não lida</span></div>
+      <div class="email-msg">
+        <div class="email-top"><span class="email-from">${esc(w.sender)}</span><span>agora</span></div>
+        <div class="email-subj">${esc(w.subject)}</div>
+        <div class="email-body">${esc(w.body)}</div>
+        ${attHtml}
+        <div class="email-actions">${w.actions.map((a,i)=>`<button class="btn-paper" data-a="${i}">${esc(a.label)}</button>`).join('')}</div>
+      </div>
+    </div>`;
+  if(w.attachment) area.querySelector('#attBtn').addEventListener('click', ()=>goTo(w.attachment.next));
+  area.querySelectorAll('[data-a]').forEach(btn=>{
+    btn.addEventListener('click', ()=>goTo(w.actions[+btn.dataset.a].next));
+  });
+}
+
+function renderLoginWidget(w, area){
+  const susClass = ' sus';
+  area.innerHTML = `
+    <div class="browser">
+      <div class="chrome"><div class="dots"><span></span><span></span><span></span></div><div class="addr${susClass}">${esc(w.urlBar)}</div></div>
+      <div class="page">
+        <div class="login-card">
+          <h4>${esc(w.brand)}</h4>
+          <div class="note">${esc(w.note||'')}</div>
+          <input type="text" placeholder="Usuário" id="loginUser">
+          <input type="password" placeholder="Senha" id="loginPass">
+          <button id="loginSubmit">Entrar</button>
+        </div>
+        <div class="secondary-row">${(w.secondary||[]).map((s,i)=>`<button class="btn" data-s="${i}">${esc(s.label)}</button>`).join('')}</div>
+      </div>
+    </div>`;
+  area.querySelector('#loginSubmit').addEventListener('click', ()=>goTo(w.submitNext));
+  (w.secondary||[]).forEach((s,i)=> area.querySelector(`[data-s="${i}"]`).addEventListener('click', ()=>goTo(s.next)));
+}
+
+function renderCallWidget(w, area){
+  let revealed = 0;
+  function draw(){
+    area.innerHTML = `
+      <div class="phone"><div class="phone-screen"><div class="callscreen">
+        <div class="caller">${esc(w.caller)}</div>
+        <div class="calltag">${esc(w.calltag)}</div>
+        ${w.transcript.slice(0, revealed+1).map(t=>`<div class="call-line">${esc(t)}</div>`).join('')}
+        ${revealed < w.transcript.length-1 ? '<button class="btn step-btn" id="nextLine">Continuar ouvindo…</button>' : ''}
+      </div></div></div>
+      <div class="choices" id="callChoices" style="margin-top:14px;"></div>
+    `;
+    if(revealed < w.transcript.length-1){
+      area.querySelector('#nextLine').addEventListener('click', ()=>{ revealed++; draw(); });
+    } else {
+      const cc = area.querySelector('#callChoices');
+      w.choices.forEach(c=>{
+        const b = document.createElement('button');
+        b.className = 'choice-btn';
+        b.innerHTML = '<span class="arrow">→</span>' + esc(c.label);
+        b.addEventListener('click', ()=>goTo(c.next));
+        cc.appendChild(b);
+      });
+    }
+  }
+  draw();
+}
+
+function renderSmsWidget(w, area){
+  area.innerHTML = `
+    <div class="phone"><div class="phone-screen">
+      ${w.messages.map(m=>`<div class="bubble"><div class="sender">${esc(m.from)}</div>${esc(m.text)} <a class="fake-link">${esc(m.link||'')}</a></div>`).join('')}
+    </div></div>
+    <div class="choices" style="margin-top:14px;">${w.actions.map((a,i)=>`<button class="choice-btn" data-a="${i}"><span class="arrow">→</span>${esc(a.label)}</button>`).join('')}</div>
+  `;
+  area.querySelectorAll('[data-a]').forEach(btn=> btn.addEventListener('click', ()=>goTo(w.actions[+btn.dataset.a].next)));
+}
+
+function renderSmartscreenWidget(w, area){
+  let stage = 0;
+  function draw(){
+    area.innerHTML = `
+      <div class="os-dialog">
+        <div class="os-title">${esc(w.title)}</div>
+        <div class="os-body"><b>${esc(w.message)}</b>${stage===0 ? '<div style="font-size:.76rem;color:#5a5a5a;">Clique em "Mais detalhes" para ver as opções.</div>' : ''}</div>
+        <div class="os-actions">
+          ${stage===0 ? '<button class="os-btn" id="more">Mais detalhes</button>' : `<button class="os-btn" id="cancel">${esc(w.cancelLabel)}</button><button class="os-btn run" id="proceed">${esc(w.proceedLabel)}</button>`}
+        </div>
+      </div>`;
+    if(stage===0){ area.querySelector('#more').addEventListener('click', ()=>{ stage=1; draw(); }); }
+    else{
+      area.querySelector('#cancel').addEventListener('click', ()=>goTo(w.cancelNext));
+      area.querySelector('#proceed').addEventListener('click', ()=>goTo(w.proceedNext));
+    }
+  }
+  draw();
+}
+
+function renderTerminalWidget(w, area){
+  let shown = 0;
+  function draw(){
+    area.innerHTML = `
+      <div class="terminal">
+        ${w.lines.slice(0, shown).map(l=>`<div class="line ${l.startsWith('>')?'out':''}">${esc(l)}</div>`).join('')}
+        <span class="cursor"></span>
+      </div>
+      <button class="btn step-btn" id="stepBtn">${shown < w.lines.length ? 'Executar próximo passo' : 'Continuar'}</button>
+    `;
+    area.querySelector('#stepBtn').addEventListener('click', ()=>{
+      if(shown < w.lines.length){ shown++; draw(); } else { goTo(w.next); }
+    });
+  }
+  draw();
+}
+
+function renderFeedWidget(w, area){
+  let shown = 0;
+  function draw(){
+    area.innerHTML = `
+      <div class="feed-box">
+        ${w.events.slice(0, shown).map(e=>`<div class="feed-line">▸ ${esc(e)}</div>`).join('')}
+      </div>
+      <button class="btn step-btn" id="feedBtn">${shown < w.events.length ? 'Avançar' : 'Continuar'}</button>
+    `;
+    area.querySelector('#feedBtn').addEventListener('click', ()=>{
+      if(shown < w.events.length){ shown++; draw(); } else { goTo(w.next); }
+    });
+  }
+  draw();
+}
+
+function renderDownloadWidget(w, area){
+  area.innerHTML = `
+    <div class="card" style="background:var(--paper); color:#20242c;">
+      <div style="font-family:var(--mono); font-size:.85rem; margin-bottom:14px;">⬇ ${esc(w.fileName)} — download concluído</div>
+      <div class="email-actions">${w.actions.map((a,i)=>`<button class="btn-paper" data-a="${i}">${esc(a.label)}</button>`).join('')}</div>
+    </div>`;
+  area.querySelectorAll('[data-a]').forEach(btn=> btn.addEventListener('click', ()=>goTo(w.actions[+btn.dataset.a].next)));
+}
+
+function renderSqliWidget(w, area){
+  function draw(msg){
+    area.innerHTML = `
+      <div class="sqli-box">
+        <h4>Painel do Cliente — Login</h4>
+        <div class="field"><label>Usuário</label><input type="text" id="sqlUser" placeholder="usuario@exemplo.com"></div>
+        <div class="field"><label>Senha</label><input type="text" id="sqlPass" placeholder="senha"></div>
+        <button class="btn-paper" id="sqlSubmit">Entrar</button>
+        <button class="btn-paper" id="sqlHint" style="margin-left:8px;">Preencher com exemplo de injeção de SQL</button>
+        ${msg ? `<div class="sqli-msg denied">${esc(msg)}</div>` : ''}
+      </div>`;
+    area.querySelector('#sqlHint').addEventListener('click', ()=>{ area.querySelector('#sqlUser').value = w.hint; });
+    area.querySelector('#sqlSubmit').addEventListener('click', ()=>{
+      const u = area.querySelector('#sqlUser').value;
+      const p = area.querySelector('#sqlPass').value;
+      const suspicious = /'|--|( or )|(\bOR\b)/i.test(u) || /'|--|( or )|(\bOR\b)/i.test(p);
+      if(suspicious){
+        area.innerHTML = `
+          <div class="sqli-box">
+            <h4>Consulta processada sem validação</h4>
+            <p style="font-size:.84rem;">A condição digitada tornou a cláusula de verificação sempre verdadeira, e o sistema devolveu o primeiro registro da tabela de clientes como se fosse um login válido.</p>
+            <table class="db-table"><tr><th>id_cliente</th><th>nome</th><th>email</th><th>conta_banco</th></tr>
+            <tr><td>00001</td><td>████████</td><td>████████@████.com</td><td>████-████</td></tr></table>
+            <button class="btn primary step-btn" id="contInject">Continuar</button>
+          </div>`;
+        area.querySelector('#contInject').addEventListener('click', ()=>goTo(w.successNext));
+      } else {
+        draw('Acesso negado — usuário ou senha inválidos. Tente novamente, ou use o exemplo de injeção acima.');
+      }
+    });
+  }
+  draw();
+}
+
+function renderBuilderWidget(w, area){
+  const selections = new Array(w.groups.length).fill(-1);
+  function draw(){
+    area.innerHTML = w.groups.map((g,gi)=>`
+      <div class="builder-group">
+        <h5>${esc(g.label)}</h5>
+        ${g.options.map((o,oi)=>`
+          <button class="builder-opt ${selections[gi]===oi?'sel':''}" data-g="${gi}" data-o="${oi}">
+            ${esc(o.text)}
+            ${selections[gi]===oi ? `<span class="note">${esc(o.note)}</span>` : ''}
+          </button>`).join('')}
+      </div>`).join('') +
+      `<button class="btn primary builder-submit" id="builderSubmit" ${selections.includes(-1)?'disabled':''}>${esc(w.submitLabel)}</button>`;
+    area.querySelectorAll('.builder-opt').forEach(btn=>{
+      btn.addEventListener('click', ()=>{ selections[+btn.dataset.g] = +btn.dataset.o; draw(); });
+    });
+    const submitBtn = area.querySelector('#builderSubmit');
+    if(!selections.includes(-1)){
+      submitBtn.addEventListener('click', ()=>{
+        let total = 0; dynamicFeedback = [];
+        w.groups.forEach((g,gi)=>{ const o = g.options[selections[gi]]; total += o.score; dynamicFeedback.push(g.label+': '+o.note); });
+        goTo(pickThreshold(total, w.thresholds));
+      });
+    }
+  }
+  draw();
+}
+
+function renderOsintWidget(w, area){
+  const selected = new Set();
+  function draw(){
+    area.innerHTML = `
+      <div class="osint-grid">
+        ${w.sources.map((s,i)=>`
+          <div class="osint-card ${selected.has(i)?'sel':''}" data-i="${i}">
+            <h5>${esc(s.title)}</h5>
+            <p>${esc(s.body)}</p>
+          </div>`).join('')}
+      </div>
+      <div class="dossie"><b>Dossiê coletado (${selected.size}/${w.maxPick}):</b> ${selected.size ? [...selected].map(i=>esc(w.sources[i].fact)).join(' · ') : 'nada selecionado ainda.'}</div>
+      <button class="btn primary" id="osintProceed" ${selected.size===0?'disabled':''}>${esc(w.proceedLabel)}</button>
+    `;
+    area.querySelectorAll('.osint-card').forEach(card=>{
+      card.addEventListener('click', ()=>{
+        const i = +card.dataset.i;
+        if(selected.has(i)) selected.delete(i);
+        else if(selected.size < w.maxPick) selected.add(i);
+        draw();
+      });
+    });
+    const proceedBtn = area.querySelector('#osintProceed');
+    if(selected.size>0){
+      proceedBtn.addEventListener('click', ()=>{
+        let total = 0; dynamicFeedback = [];
+        selected.forEach(i=>{ total += w.sources[i].quality; dynamicFeedback.push('Usado no pretexto: '+w.sources[i].fact+'.'); });
+        goTo(pickThreshold(total, w.thresholds));
+      });
+    }
+  }
+  draw();
+}
+
+/* ================= SOC DASHBOARD ================= */
+const SOC_ALERTS = [
+  {time:"03:14", source:"Log de autenticação VPN", desc:"Login bem-sucedido a partir de um endereço IP de outro país, em uma conta que nunca acessou de fora do país antes.", correct:'block',
+   explain:"Esse padrão é exatamente o que precedeu o ataque à Colonial Pipeline em 2021: uma conta válida, mas usada de um lugar e horário incomuns. Deveria ser bloqueada e investigada de imediato, não apenas monitorada."},
+  {time:"09:02", source:"Filtro de e-mail", desc:"Um funcionário recuperou uma mensagem da pasta de spam com uma planilha anexada e pediu à TI para liberar a execução de conteúdo ativo.", correct:'block',
+   explain:"Esse é quase o mesmo padrão do ataque à RSA Security em 2011. Pedidos para liberar conteúdo ativo em anexos vindos de mensagens já sinalizadas como spam deveriam ser barrados, não apenas registrados."},
+  {time:"14:47", source:"Sistema de e-mail marketing", desc:"Newsletter semanal enviada pelo próprio departamento de marketing, layout de sempre, sem links externos além do site oficial da empresa.", correct:'ignore',
+   explain:"Esse alerta corresponde ao comportamento normal e esperado de uma newsletter interna legítima — investigar ou bloquear geraria trabalho desnecessário e atrito com outras áreas."},
+  {time:"11:20", source:"Central de atendimento", desc:"Ligação pedindo redefinição de senha de um funcionário que está de férias, sem verificação completa de identidade.", correct:'investigate',
+   explain:"Antes de bloquear ou liberar, o procedimento correto é verificar diretamente com o funcionário, por um canal independente, se o pedido é real — a mesma verificação que teria evitado o vishing contra a Twitter em 2020."},
+  {time:"22:03", source:"Monitoramento de nuvem", desc:"Aumento repentino de requisições de leitura em massa a um bucket de armazenamento, partindo de um serviço que normalmente só grava dados, nunca lê em volume.", correct:'block',
+   explain:"Esse é o tipo de anomalia técnica por trás do ataque à Capital One em 2019 — uma função com permissões além do necessário sendo usada de forma incomum. Prioridade máxima de bloqueio e investigação."},
+  {time:"16:35", source:"Relato de funcionário", desc:"Um colaborador reporta ter recebido um SMS pedindo para atualizar a senha corporativa por um link, mas diz que não clicou em nada.", correct:'investigate',
+   explain:"Mesmo sem interação da vítima, vale investigar se outros colaboradores receberam a mesma mensagem e bloquear o domínio nos filtros da empresa — o mesmo tipo de campanha usada contra a Twilio e a Cloudflare em 2022."},
+  {time:"08:15", source:"Controle de acesso a repositórios", desc:"Solicitação de acesso a um repositório de código legado, enviada por um novo estagiário para revisar um projeto antigo, aprovada automaticamente pelo fluxo padrão de integração.", correct:'ignore',
+   explain:"Esse é um comportamento esperado dentro do processo padrão de integração de novos colaboradores — não há nenhum sinal de anomalia aqui."},
+  {time:"04:58", source:"Log de autenticação", desc:"Múltiplas tentativas de login malsucedidas contra uma única conta de administrador, vindas de vários endereços IP diferentes em poucos minutos, seguidas de um login bem-sucedido.", correct:'block',
+   explain:"Esse é o padrão clássico de teste em massa de senhas vazadas (credential stuffing) — o mesmo mecanismo por trás do acesso inicial ao ataque da Colonial Pipeline. A conta deveria ser bloqueada e forçada a trocar de senha imediatamente."}
+];
+const SOC_ACTION_LABEL = {ignore:'Marcar como falso positivo', investigate:'Investigar mais a fundo', block:'Bloquear / escalar imediatamente'};
+let socIndex = 0, socScore = 0, socAnswered = false;
+
+function renderSoc(){
+  const area = document.getElementById('socArea');
+  if(socIndex >= SOC_ALERTS.length){
+    socPlayed = true;
+    lastSocScore = socScore;
+    updateProgressDashboard();
+    saveProgress();
+    let msg;
+    if(socScore === SOC_ALERTS.length) msg = 'Pontuação máxima — você classificou todos os alertas exatamente como um analista experiente faria.';
+    else if(socScore >= SOC_ALERTS.length - 2) msg = 'Bom desempenho. Revise as explicações dos alertas em que a decisão foi diferente da recomendada.';
+    else msg = 'Vale revisar os padrões: cada alerta aqui ecoa diretamente um dos casos reais do simulador.';
+    area.innerHTML = `
+      <div class="soc-card soc-summary">
+        <div style="color:var(--text-dim); font-size:.8rem; letter-spacing:1px;">RESULTADO DO TURNO</div>
+        <div class="num">${socScore}/${SOC_ALERTS.length}</div>
+        <p style="color:var(--text-dim); max-width:460px; margin:10px auto 0;">${msg}</p>
+        <button class="btn primary" id="socRestart" style="margin-top:16px;">Reiniciar o painel</button>
+      </div>`;
+    document.getElementById('socRestart').addEventListener('click', ()=>{ socIndex=0; socScore=0; renderSoc(); });
+    return;
+  }
+  const a = SOC_ALERTS[socIndex];
+  socAnswered = false;
+  area.innerHTML = `
+    <div class="soc-progress">Alerta ${socIndex+1} de ${SOC_ALERTS.length} · ${a.time} · ${esc(a.source)}</div>
+    <div class="soc-card">
+      <div class="soc-meta">Novo alerta</div>
+      <div class="soc-desc">${esc(a.desc)}</div>
+      <div class="soc-actions">
+        <button class="btn" data-act="ignore">Falso positivo</button>
+        <button class="btn" data-act="investigate">Investigar</button>
+        <button class="btn primary" data-act="block">Bloquear / escalar</button>
+      </div>
+      <div id="socFeedback"></div>
+    </div>`;
+  area.querySelectorAll('[data-act]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      if(socAnswered) return;
+      socAnswered = true;
+      const chosen = btn.dataset.act;
+      const correct = chosen === a.correct;
+      if(correct) socScore++;
+      logDecision(correct?1:0, a.source+' — '+SOC_ACTION_LABEL[chosen], 'painel');
+      const fb = document.getElementById('socFeedback');
+      fb.innerHTML = `
+        <div class="soc-feedback ${correct?'correct':'wrong'}">
+          <b>${correct ? 'Decisão recomendada' : 'A decisão recomendada era: ' + SOC_ACTION_LABEL[a.correct]}</b>
+          ${esc(a.explain)}
+        </div>
+        <button class="btn primary step-btn" id="socNext">Próximo alerta</button>`;
+      document.getElementById('socNext').addEventListener('click', ()=>{ socIndex++; renderSoc(); });
+    });
+  });
+}
+renderSoc();
+
+/* ================= PASSWORD STRENGTH TOOL ================= */
+const pwInput = document.getElementById('pwInput');
+if(pwInput){
+  pwInput.addEventListener('input', ()=>{
+    const val = pwInput.value;
+    const fill = document.getElementById('pwFill');
+    const result = document.getElementById('pwResult');
+    if(!val){ fill.style.width='0%'; fill.style.background='var(--danger)'; result.textContent='Digite algo acima para ver a estimativa.'; return; }
+    let charset = 0;
+    if(/[a-z]/.test(val)) charset += 26;
+    if(/[A-Z]/.test(val)) charset += 26;
+    if(/[0-9]/.test(val)) charset += 10;
+    if(/[^a-zA-Z0-9]/.test(val)) charset += 32;
+    charset = Math.max(charset, 10);
+    const entropyBits = val.length * Math.log2(charset);
+    const guessesPerSecond = 10000000000; // 1e10 - offline attack estimate
+    const seconds = Math.pow(2, entropyBits) / guessesPerSecond;
+    let timeText, pct, color;
+    if(seconds < 1){ timeText = 'instantâneo'; pct = 5; color = 'var(--danger)'; }
+    else if(seconds < 60){ timeText = Math.round(seconds)+' segundos'; pct = 15; color = 'var(--danger)'; }
+    else if(seconds < 3600){ timeText = Math.round(seconds/60)+' minutos'; pct = 30; color = 'var(--danger)'; }
+    else if(seconds < 86400){ timeText = Math.round(seconds/3600)+' horas'; pct = 45; color = 'var(--warn)'; }
+    else if(seconds < 31536000){ timeText = Math.round(seconds/86400)+' dias'; pct = 60; color = 'var(--warn)'; }
+    else if(seconds < 31536000*100){ timeText = Math.round(seconds/31536000)+' anos'; pct = 80; color = 'var(--safe)'; }
+    else { timeText = 'mais de um século'; pct = 100; color = 'var(--safe)'; }
+    fill.style.width = pct+'%'; fill.style.background = color;
+    result.innerHTML = 'Tempo estimado para quebrar por tentativa exaustiva: <b>'+timeText+'</b> (estimativa aproximada, considerando um ataque offline de alta capacidade).';
+  });
+}
+
+/* ================= PROGRESS DASHBOARD ================= */
+function updateProgressDashboard(){
+  const simFill = document.getElementById('dashSimFill');
+  if(!simFill) return;
+  const totalScenarios = Object.keys(SCENARIOS).length;
+  simFill.style.width = Math.round((completed.size/totalScenarios)*100)+'%';
+  document.getElementById('dashSimNum').textContent = completed.size+' / '+totalScenarios;
+
+  const socFill = document.getElementById('dashSocFill');
+  if(socPlayed){
+    socFill.style.width = Math.round((socScore/SOC_ALERTS.length)*100)+'%';
+    document.getElementById('dashSocNum').textContent = socScore+' / '+SOC_ALERTS.length+' alertas corretos';
+  } else if(lastSocScore !== null){
+    socFill.style.width = Math.round((lastSocScore/SOC_ALERTS.length)*100)+'%';
+    document.getElementById('dashSocNum').textContent = lastSocScore+' / '+SOC_ALERTS.length+' (sessão anterior)';
+  } else {
+    socFill.style.width = '0%';
+    document.getElementById('dashSocNum').textContent = 'ainda não realizado';
+  }
+
+  const quizFill = document.getElementById('dashQuizFill');
+  if(quizPlayed){
+    quizFill.style.width = Math.round((score/QUESTIONS.length)*100)+'%';
+    document.getElementById('dashQuizNum').textContent = score+' / '+QUESTIONS.length+' respostas certas';
+  } else if(lastQuizScore !== null){
+    quizFill.style.width = Math.round((lastQuizScore/QUESTIONS.length)*100)+'%';
+    document.getElementById('dashQuizNum').textContent = lastQuizScore+' / '+QUESTIONS.length+' (sessão anterior)';
+  } else {
+    quizFill.style.width = '0%';
+    document.getElementById('dashQuizNum').textContent = 'ainda não realizada';
+  }
+
+  const badge = document.getElementById('dashBadge');
+  let level = 'Iniciante';
+  if(completed.size >= totalScenarios && (socPlayed||lastSocScore!==null) && (quizPlayed||lastQuizScore!==null)) level = 'Analista completo';
+  else if(completed.size >= Math.ceil(totalScenarios/2) || socPlayed || quizPlayed || lastSocScore!==null || lastQuizScore!==null) level = 'Em treinamento';
+  badge.textContent = level;
+}
+
+/* ================= URL INSPECTOR ================= */
+const urlInput = document.getElementById('urlInput');
+if(urlInput){
+  urlInput.addEventListener('input', ()=>{
+    const raw = urlInput.value.trim();
+    const result = document.getElementById('urlResult');
+    if(!raw){ result.textContent = 'Digite um endereço acima.'; return; }
+    let host = raw.replace(/^https?:\/\//i, '').split('/')[0].split('?')[0].split('#')[0];
+    const parts = host.split('.').filter(Boolean);
+    if(parts.length < 2){ result.innerHTML = 'Endereço incompleto — inclui pelo menos um domínio e uma extensão (ex: exemplo.com).'; return; }
+    let sldIndex = parts.length - 2;
+    const commonTwoPart = ['com.br','org.br','gov.br','net.br','co.uk','com.au'];
+    const lastTwo = parts.slice(-2).join('.');
+    if(commonTwoPart.includes(lastTwo) && parts.length >= 3) sldIndex = parts.length - 3;
+    const subdomain = parts.slice(0, sldIndex).join('.');
+    const realDomain = parts.slice(sldIndex).join('.');
+    result.innerHTML = `
+      ${subdomain ? `<span class="sub">${esc(subdomain)}.</span>` : ''}<span class="dom">${esc(realDomain)}</span>
+      <br><br>O domínio que realmente controla este endereço é <b style="color:var(--text-light);">${esc(realDomain)}</b>.
+      ${subdomain ? 'Tudo antes disso ('+esc(subdomain)+') é só um subdomínio — pode ser escrito por qualquer um que registre '+esc(realDomain)+', inclusive para parecer com outra empresa.' : ''}
+    `;
+  });
+}
+
+/* ================= MATCHING GAME ================= */
+const MATCH_PAIRS = [
+  {a:"Nome de arquivo curioso como isca", b:"RSA Security, 2011"},
+  {a:"Ligação usando um problema real da equipe como pretexto", b:"Twitter, 2020"},
+  {a:"Conta de acesso remoto esquecida, sem MFA", b:"Colonial Pipeline, 2021"},
+  {a:"Correção de segurança disponível e não aplicada", b:"Equifax, 2017"},
+  {a:"Permissões excessivas combinadas a uma falha técnica (SSRF)", b:"Capital One, 2019"},
+  {a:"Página de login clonada capturando código de verificação em tempo real", b:"Campanha \"0ktapus\", 2022"}
+];
+let matchPicked = null, matchSolvedCount = 0;
+function renderMatchGame(){
+  const grid = document.getElementById('matchGrid');
+  if(!grid) return;
+  const aCards = MATCH_PAIRS.map((p,i)=>({side:'a', i, text:p.a}));
+  const bCards = MATCH_PAIRS.map((p,i)=>({side:'b', i, text:p.b})).sort(()=>Math.random()-0.5);
+  const all = [];
+  aCards.forEach(c=>all.push(c));
+  bCards.forEach(c=>all.push(c));
+  grid.innerHTML = all.map((c,idx)=>`<div class="match-card" data-side="${c.side}" data-i="${c.i}" data-idx="${idx}">${esc(c.text)}</div>`).join('');
+  grid.querySelectorAll('.match-card').forEach(card=>{
+    card.addEventListener('click', ()=>{
+      if(card.classList.contains('solved')) return;
+      if(!matchPicked){
+        matchPicked = card;
+        card.classList.add('picked');
+        return;
+      }
+      if(matchPicked === card) return;
+      if(matchPicked.dataset.side === card.dataset.side){
+        matchPicked.classList.remove('picked');
+        matchPicked = card; card.classList.add('picked');
+        return;
+      }
+      if(matchPicked.dataset.i === card.dataset.i){
+        matchPicked.classList.remove('picked'); matchPicked.classList.add('solved');
+        card.classList.add('solved');
+        matchSolvedCount++;
+        document.getElementById('matchStatus').textContent = matchSolvedCount+' de '+MATCH_PAIRS.length+' pares encontrados' + (matchSolvedCount===MATCH_PAIRS.length ? ' — completo!' : '');
+        matchPicked = null;
+      } else {
+        const wrong1 = matchPicked, wrong2 = card;
+        wrong1.classList.add('shake'); wrong2.classList.add('shake');
+        setTimeout(()=>{ wrong1.classList.remove('picked','shake'); wrong2.classList.remove('shake'); }, 320);
+        matchPicked = null;
+      }
+    });
+  });
+}
+renderMatchGame();
+
+/* ================= DECISION CURVE CHART ================= */
+function qualityColor(q){ return q >= 1 ? 'var(--safe)' : (q >= 0.5 ? 'var(--warn)' : 'var(--danger)'); }
+
+function renderDecisionChart(){
+  const chartArea = document.getElementById('chartArea');
+  const statsArea = document.getElementById('chartStats');
+  const logArea = document.getElementById('decisionLogArea');
+  if(!chartArea) return;
+
+  if(decisionLog.length === 0){
+    chartArea.innerHTML = '<div class="chart-empty">Nenhuma decisão registrada ainda. Explore um caso, responda um alerta no painel do analista ou uma pergunta do quiz — cada uma vira um ponto aqui.</div>';
+    statsArea.innerHTML = '';
+    logArea.innerHTML = '';
+    return;
+  }
+
+  const W = 640, H = 260, padL = 42, padR = 14, padT = 14, padB = 34;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const n = decisionLog.length;
+
+  let running = 0;
+  const points = decisionLog.map((d, i) => {
+    running += d.quality;
+    const cum = (running / (i+1)) * 100;
+    const x = n === 1 ? padL + plotW/2 : padL + (i/(n-1)) * plotW;
+    const y = padT + (1 - cum/100) * plotH;
+    return {x, y, cum, ...d};
+  });
+
+  const gridLines = [0,25,50,75,100].map(v=>{
+    const y = padT + (1 - v/100) * plotH;
+    return `<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="var(--line)" stroke-width="1"/>
+            <text x="${padL-8}" y="${y+4}" text-anchor="end" font-size="10" fill="var(--text-dim)">${v}%</text>`;
+  }).join('');
+
+  const polyline = points.map(p=>`${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+
+  const dots = points.map(p=>`
+    <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="5" fill="${qualityColor(p.quality)}" stroke="var(--ink-2)" stroke-width="1.5">
+      <title>#${p.t} · ${esc(p.label)} — taxa acumulada: ${p.cum.toFixed(0)}%</title>
+    </circle>`).join('');
+
+  const xLabelStart = `<text x="${padL}" y="${H-10}" font-size="10" fill="var(--text-dim)">decisão 1</text>`;
+  const xLabelEnd = n>1 ? `<text x="${W-padR}" y="${H-10}" text-anchor="end" font-size="10" fill="var(--text-dim)">decisão ${n}</text>` : '';
+
+  chartArea.innerHTML = `
+    <svg class="chart-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+      ${gridLines}
+      <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${H-padB}" stroke="var(--line)" stroke-width="1"/>
+      <line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="var(--line)" stroke-width="1"/>
+      <polyline points="${polyline}" fill="none" stroke="var(--warn)" stroke-width="2"/>
+      ${dots}
+      ${xLabelStart}${xLabelEnd}
+    </svg>`;
+
+  const overallRate = Math.round((points[points.length-1].cum));
+  const fell = decisionLog.filter(d=>d.quality===0).length;
+  statsArea.innerHTML = `
+    <div><b>${n}</b>decisões registradas</div>
+    <div><b>${overallRate}%</b>taxa de acerto geral</div>
+    <div><b>${fell}</b>vezes que a decisão "caiu no golpe"</div>
+  `;
+
+  logArea.innerHTML = '<h3 style="font-family:var(--serif); font-size:1rem; margin-bottom:8px;">Registro, do mais recente ao mais antigo</h3>' +
+    [...decisionLog].reverse().map(d=>`
+      <div class="item">
+        <span class="dot" style="background:${qualityColor(d.quality)};"></span>
+        <span class="src">${esc(d.source)}</span>
+        <span>${esc(d.label)}</span>
+      </div>`).join('');
+}
+
+const resetCurveBtn = document.getElementById('resetCurveBtn');
+if(resetCurveBtn){
+  resetCurveBtn.addEventListener('click', ()=>{ decisionLog = []; renderDecisionChart(); });
+}
+renderDecisionChart();
+
+/* ================= QUIZ ================= */
+const QUESTIONS = [
+  {q:"No caso da RSA Security (2011), qual foi o principal sinal de alerta que já existia antes mesmo do funcionário abrir o anexo?",
+   opts:["O e-mail veio de um domínio estrangeiro","O e-mail já havia sido classificado como spam pelo próprio sistema","O anexo tinha um tamanho incomum","O e-mail foi enviado num fim de semana"], correct:1},
+  {q:"No ataque à Twitter em 2020, qual foi a tática usada para tornar a ligação convincente?",
+   opts:["Um vídeo deepfake do CEO da empresa","Mencionar problemas reais de VPN que a equipe remota já enfrentava","Uma cobrança falsa de fatura corporativa","Um e-mail com vírus anexado"], correct:1},
+  {q:"O que permitiu, tecnicamente, o ataque de ransomware à Colonial Pipeline em 2021?",
+   opts:["Um funcionário clicou em um link malicioso","Uma conta de VPN antiga, sem uso ativo e sem autenticação em duas etapas","Um firewall mal configurado na nuvem","Uma vulnerabilidade em um servidor web público"], correct:1},
+  {q:"No caso da Equifax (2017), quanto tempo se passou entre a divulgação da correção de segurança e a descoberta da invasão?",
+   opts:["Menos de uma semana","Cerca de nove semanas","Cerca de nove dias","Mais de dois anos"], correct:1},
+  {q:"No ataque à Capital One (2019), qual foi a combinação de fatores que causou o vazamento?",
+   opts:["Engenharia social por telefone e uma senha fraca","Uma vulnerabilidade técnica (SSRF) combinada com permissões excessivas no firewall","Um funcionário insatisfeito vazou os dados intencionalmente","Um ataque de força bruta contra o painel de administração"], correct:1},
+  {q:"Por que a campanha de smishing \"0ktapus\" (2022) conseguia driblar códigos de verificação (OTP)?",
+   opts:["Porque o código era sempre o mesmo","Porque os dados digitados eram retransmitidos em tempo real para os atacantes, antes do código expirar","Porque as vítimas usavam senhas fracas","Porque o código nunca expirava"], correct:1},
+  {q:"No caso da TalkTalk (2015), qual técnica foi usada para acessar os dados dos clientes?",
+   opts:["Engenharia social por telefone","Injeção de SQL em páginas web herdadas de uma aquisição antiga","Um vírus enviado por e-mail","Roubo físico de servidores"], correct:1},
+  {q:"O que o malware RedLine Stealer costuma roubar quando um usuário executa um 'ativador' ou 'crack' infectado?",
+   opts:["Apenas o histórico de navegação","Senhas salvas, cookies de sessão, carteiras de criptomoeda e credenciais de VPN/FTP","Apenas fotos armazenadas no computador","Nada, é inofensivo"], correct:1},
+  {q:"O que protegeu a Cloudflare, mesmo depois de alguns funcionários digitarem a senha na página falsa da campanha \"0ktapus\"?",
+   opts:["Um antivírus atualizado","O uso de chaves de segurança físicas (FIDO2), que não autenticam em domínios falsos","A senha ser trocada automaticamente todo dia","O firewall corporativo"], correct:1},
+  {q:"No caso 'Montando a isca', por que combinar vários elementos (remetente, gancho psicológico, chamada para ação) torna um phishing mais eficaz do que usar só um deles?",
+   opts:["Porque e-mails mais longos são sempre mais convincentes","Porque cada elemento reduz um pouco mais a chance de a vítima parar para verificar","Porque o sistema de e-mail bloqueia mensagens curtas","Porque múltiplos elementos são exigidos por lei"], correct:1},
+  {q:"No caso 'Reconhecimento antes de ligar', por que usar um detalhe verdadeiro, mas irrelevante (como a data de aniversário da empresa), pode atrapalhar o pretexto de um golpe?",
+   opts:["Porque detalhes irrelevantes são sempre falsos","Porque soam fora de contexto e podem chamar atenção em vez de gerar confiança","Porque a vítima nunca acredita em nenhum detalhe","Porque esse tipo de informação não pode ser encontrada publicamente"], correct:1},
+  {q:"No Painel do Analista, qual é a ação recomendada diante de um login bem-sucedido vindo de um país incomum, numa conta que nunca acessou de fora antes?",
+   opts:["Ignorar, pois logins bem-sucedidos nunca são suspeitos","Bloquear e investigar imediatamente","Esperar mais alertas antes de agir","Enviar um e-mail de aviso para o próprio usuário e não fazer mais nada"], correct:1}
+];
+
+let score = 0, answered = 0;
+const quizBody = document.getElementById('quizBody');
+QUESTIONS.forEach((item, qi)=>{
+  const qDiv = document.createElement('div');
+  qDiv.className = 'q';
+  const p = document.createElement('p');
+  p.className = 'stem';
+  p.textContent = (qi+1)+'. '+item.q;
+  qDiv.appendChild(p);
+  item.opts.forEach((optText, oi)=>{
+    const b = document.createElement('button');
+    b.className = 'opt';
+    b.textContent = optText;
+    b.addEventListener('click', ()=>{
+      if(b.dataset.locked) return;
+      qDiv.querySelectorAll('.opt').forEach(o=>o.dataset.locked = "1");
+      if(oi === item.correct){ b.classList.add('correct'); score++; }
+      else{ b.classList.add('wrong'); qDiv.querySelectorAll('.opt')[item.correct].classList.add('correct'); }
+      logDecision(oi===item.correct?1:0, 'Quiz — pergunta '+(qi+1), 'quiz');
+      answered++;
+      if(answered === QUESTIONS.length) showScore();
+    });
+    qDiv.appendChild(b);
+  });
+  quizBody.appendChild(qDiv);
+});
+
+function showScore(){
+  const box = document.getElementById('scoreBox');
+  document.getElementById('scoreNum').textContent = score+'/'+QUESTIONS.length;
+  let msg;
+  if(score === QUESTIONS.length) msg = 'Pontuação máxima. Você reconhece com clareza como causas humanas e técnicas levaram a alguns dos maiores vazamentos de dados já documentados.';
+  else if(score >= QUESTIONS.length - 3) msg = 'Bom domínio dos casos. Vale revisar no simulador os incidentes que geraram dúvida.';
+  else msg = 'Vale voltar ao simulador com calma: cada caso real tem uma causa técnica específica por trás dele, vista em detalhe no desfecho de cada caminho.';
+  document.getElementById('scoreMsg').textContent = msg;
+  box.classList.add('show');
+  quizPlayed = true;
+  lastQuizScore = score;
+  updateProgressDashboard();
+  saveProgress();
+  renderFinalSummary();
+  if(box.scrollIntoView) box.scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function renderFinalSummary(){
+  const el = document.getElementById('finalSummary');
+  const totalScenarios = Object.keys(SCENARIOS).length;
+  el.innerHTML = `
+    <div class="certificate">
+      <div class="cert-eyebrow">SALA DE CASOS · RESUMO DA SESSÃO</div>
+      <h2>Certificado de participação</h2>
+      <p style="color:#5a5540; font-size:.9rem;">Simulação de quebra de confidencialidade — Segurança de Sistemas Computacionais</p>
+      <div class="cert-stats">
+        <div class="cstat"><span class="n">${completed.size}/${totalScenarios}</span><span class="l">casos explorados</span></div>
+        <div class="cstat"><span class="n">${socPlayed ? socScore+'/'+SOC_ALERTS.length : (lastSocScore!==null ? lastSocScore+'/'+SOC_ALERTS.length : '—')}</span><span class="l">painel do analista</span></div>
+        <div class="cstat"><span class="n">${score}/${QUESTIONS.length}</span><span class="l">avaliação final</span></div>
+      </div>
+      <p style="color:#8a8471; font-size:.78rem;">${new Date().toLocaleDateString('pt-BR', {day:'2-digit', month:'long', year:'numeric'})}</p>
+      <button class="btn no-print" style="margin-top:10px; background:#4a4234; color:#fff; border:none;" onclick="window.print()">Imprimir / salvar como PDF</button>
+    </div>`;
+}
+
+const resetAllBtn = document.getElementById('resetAllBtn');
+if(resetAllBtn){
+  resetAllBtn.addEventListener('click', ()=>{
+    if(confirm('Isso apaga todo o progresso salvo neste navegador (casos, painel do analista, quiz e curva de decisões). Continuar?')){
+      clearAllProgress();
+    }
+  });
+}
+
+if(hadSavedProgress){
+  const banner = document.getElementById('restoreBanner');
+  if(banner){
+    banner.innerHTML = `<div class="restore-banner">
+      <span>Uma sessão anterior foi restaurada automaticamente neste navegador.</span>
+      <button id="dismissRestoreBtn">Dispensar</button>
+    </div>`;
+    const dismissBtn = document.getElementById('dismissRestoreBtn');
+    if(dismissBtn) dismissBtn.addEventListener('click', ()=>{ banner.innerHTML=''; });
+  }
+}
+
+updateProgressDashboard();
+renderDecisionChart();
+</script>
+</body>
+</html>

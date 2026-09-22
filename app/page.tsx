@@ -1,564 +1,341 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import {
-  ArrowUpRight,
-  Clock3,
-  MapPin,
-  Menu,
-  Phone,
-  Sparkles,
-  X,
-  ChevronLeft,
-  ChevronRight,
-  Heart,
-  ArrowRight,
-} from 'lucide-react'
+import { useEffect, useState, useRef } from 'react'
+import Link from 'next/link'
 
-const whatsappUrl =
-  'https://wa.me/5594991492417?text=Ol%C3%A1!%20Quero%20agendar%20um%20hor%C3%A1rio%20na%20Loucas%20Por%20Esmaltes.'
-
-const instagramUrl = 'https://www.instagram.com/loucasporesmaltesmaraba/'
-const mapsUrl = 'https://www.google.com/maps/search/?api=1&query=Av.+Castelo+Branco,+1887+-+Marab%C3%A1,+PA'
-
-type ServiceCategory = 'Todos' | 'Maos' | 'Pes' | 'Combos'
-
-interface ServiceItem {
-  id: number
-  category: ServiceCategory
-  name: string
-  price: string
-  image: string
+function useInView(threshold = 0.15) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [visible, setVisible] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setVisible(true); obs.disconnect() } },
+      { threshold }
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [threshold])
+  return { ref, visible }
 }
 
-const services: ServiceItem[] = [
+function RevealSection({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
+  const { ref, visible } = useInView()
+  return (
+    <div
+      ref={ref}
+      className={className}
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(24px)',
+        transition: `opacity 0.6s ease ${delay}ms, transform 0.6s ease ${delay}ms`,
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
+const MEMBERS = [
+  { name: 'Membro 1', ra: 'RA: XXXXXXX' },
+  { name: 'Membro 2', ra: 'RA: XXXXXXX' },
+  { name: 'Membro 3', ra: 'RA: XXXXXXX' },
+  { name: 'Membro 4', ra: 'RA: XXXXXXX' },
+]
+
+const SECTIONS = [
   {
-    id: 1,
-    category: 'Maos',
-    name: 'Esmaltação em Gel',
-    price: 'R$ 70,00',
-    image: '/service-esmaltacao-gel.jpg',
+    id: 'triade',
+    eyebrow: 'Fundamentos',
+    title: 'A Tríade CIA',
+    icon: (
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      </svg>
+    ),
+    content: (
+      <div className="cia-grid">
+        <div className="cia-pillar cia-intact">
+          <h4>Integridade</h4>
+          <p>A informação não pode ser alterada indevidamente por pessoas não autorizadas.</p>
+        </div>
+        <div className="cia-pillar cia-avail">
+          <h4>Disponibilidade</h4>
+          <p>A informação precisa estar acessível e utilizável quando necessário.</p>
+        </div>
+        <div className="cia-pillar cia-conf cia-target">
+          <div className="cia-target-badge">🎯 Foco desta simulação</div>
+          <h4>Confidencialidade</h4>
+          <p>Somente pessoas devidamente autorizadas podem acessar a informação.</p>
+        </div>
+      </div>
+    ),
   },
   {
-    id: 2,
-    category: 'Maos',
-    name: 'Alongamento em Gel',
-    price: 'R$ 220,00',
-    image: '/service-alongamento-gel.jpg',
+    id: 'falhas',
+    eyebrow: 'Vetores de Ataque',
+    title: 'Como a Confidencialidade é Quebrada',
+    icon: (
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+    ),
+    content: (
+      <div className="falhas-grid">
+        <div className="falha-card human">
+          <div className="falha-tag">Falha Humana</div>
+          <h4>Engenharia Social</h4>
+          <p>A pessoa autorizada é convencida a entregar credenciais voluntariamente — via e-mail, ligação, SMS ou instalador malicioso baixado da internet.</p>
+          <div className="falha-examples">
+            <span>Phishing</span>
+            <span>Vishing</span>
+            <span>Smishing</span>
+            <span>Pretexting</span>
+          </div>
+        </div>
+        <div className="falha-card tech">
+          <div className="falha-tag">Falha Técnica</div>
+          <h4>Vulnerabilidade de Sistema</h4>
+          <p>Uma configuração aberta, código vulnerável a injeção, ou uma atualização não aplicada deixa a porta destrancada sem qualquer interação humana.</p>
+          <div className="falha-examples">
+            <span>SQL Injection</span>
+            <span>SSRF</span>
+            <span>Patch não aplicado</span>
+            <span>Excesso de permissão</span>
+          </div>
+        </div>
+      </div>
+    ),
   },
   {
-    id: 3,
-    category: 'Maos',
-    name: 'Banho em Gel Esmaltado',
-    price: 'R$ 150,00',
-    image: '/service-banho-gel.jpg',
+    id: 'casos',
+    eyebrow: 'Casos Reais',
+    title: 'Incidentes Documentados',
+    icon: (
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" />
+      </svg>
+    ),
+    content: (
+      <div className="casos-grid">
+        {[
+          { year: '2011', org: 'RSA Security', type: 'human', label: 'Humana', desc: 'Planilha Excel com exploit zero-day enviada por phishing comprometeu tokens SecurID usados por 40 milhões de pessoas.' },
+          { year: '2020', org: 'Twitter', type: 'human', label: 'Humana', desc: 'Vishing contra funcionários do suporte comprometeu 130 contas verificadas, incluindo Obama e Elon Musk.' },
+          { year: '2021', org: 'Colonial Pipeline', type: 'tech', label: 'Técnica', desc: 'Conta de VPN legada sem 2FA foi usada para instalar ransomware, interrompendo 45% do fornecimento de combustível do leste dos EUA.' },
+          { year: '2017', org: 'Equifax', type: 'tech', label: 'Técnica', desc: 'Vulnerabilidade Apache Struts não corrigida por 9 semanas expôs dados de 147 milhões de pessoas.' },
+          { year: '2019', org: 'Capital One', type: 'tech', label: 'Técnica', desc: 'SSRF combinado com permissões excessivas no firewall vazou dados de 106 milhões de clientes.' },
+          { year: '2022', org: 'Twilio / 0ktapus', type: 'human', label: 'Humana', desc: 'Campanha de smishing em larga escala capturava OTPs em tempo real, driblando autenticação em duas etapas.' },
+        ].map((c) => (
+          <div className={`caso-card ${c.type}`} key={c.org}>
+            <div className="caso-header">
+              <span className="caso-year">{c.year}</span>
+              <span className={`caso-type ${c.type}`}>{c.label}</span>
+            </div>
+            <h4 className="caso-org">{c.org}</h4>
+            <p className="caso-desc">{c.desc}</p>
+          </div>
+        ))}
+      </div>
+    ),
   },
   {
-    id: 4,
-    category: 'Maos',
-    name: 'Manicure Clássica',
-    price: 'R$ 35,00',
-    image: '/service-manicure.jpg',
-  },
-  {
-    id: 5,
-    category: 'Pes',
-    name: 'Pedicure Spa',
-    price: 'R$ 55,00',
-    image: '/service-pedicure.jpg',
-  },
-  {
-    id: 6,
-    category: 'Combos',
-    name: 'Combo Mãos + Pés',
-    price: 'R$ 80,00',
-    image: '/service-manicure.jpg',
+    id: 'gatilhos',
+    eyebrow: 'Psicologia da Persuasão',
+    title: 'Os Gatilhos por Trás de Cada Decisão',
+    icon: (
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+      </svg>
+    ),
+    content: (
+      <div className="gatilhos-list">
+        {[
+          { name: 'Autoridade', type: 'human', ex: '"Aqui é do suporte de TI" — ataque à Twitter, 2020', desc: 'Pessoas obedecem mais facilmente a quem parece ocupar posição de poder ou conhecimento técnico.' },
+          { name: 'Urgência e Escassez', type: 'human', ex: '"Sua senha expira hoje" — campanha 0ktapus, 2022', desc: 'Prazos curtos cortam o tempo de reflexão da vítima, impedindo verificações básicas.' },
+          { name: 'Curiosidade', type: 'human', ex: '"2011 Recruitment Plan.xls" — RSA Security, 2011', desc: 'Um nome de arquivo bem escolhido motiva uma ação que, em outro contexto, pareceria arriscada.' },
+          { name: 'Complacência Técnica', type: 'tech', ex: 'Correção disponível e não aplicada por semanas — Equifax, 2017', desc: 'Configurações provisórias e atualizações pendentes viram permanentes porque "está funcionando".' },
+          { name: 'Excesso de Permissão', type: 'tech', ex: 'Firewall com leitura em centenas de áreas — Capital One, 2019', desc: 'Conceder mais acesso do que o necessário transforma uma falha pequena em um vazamento gigante.' },
+        ].map((g) => (
+          <div className={`gatilho-item ${g.type}`} key={g.name}>
+            <div className="gatilho-header">
+              <strong className="gatilho-name">{g.name}</strong>
+              <span className={`gatilho-badge ${g.type}`}>{g.type === 'human' ? 'Humano' : 'Técnico'}</span>
+            </div>
+            <p className="gatilho-desc">{g.desc}</p>
+            <p className="gatilho-ex">Ex: {g.ex}</p>
+          </div>
+        ))}
+      </div>
+    ),
   },
 ]
 
-const categories: { key: ServiceCategory; label: string }[] = [
-  { key: 'Todos', label: 'Todos' },
-  { key: 'Maos', label: 'Mãos' },
-  { key: 'Pes', label: 'Pés' },
-  { key: 'Combos', label: 'Combos' },
-]
-
-export default function Page() {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [activeCategory, setActiveCategory] = useState<ServiceCategory>('Todos')
-  const [carouselIndex, setCarouselIndex] = useState(0)
-  const [headerScrolled, setHeaderScrolled] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
-
-  const touchStartX = useRef(0)
-  const touchEndX = useRef(0)
-
-  // Track viewport size for responsive carousel cards count
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768)
-    }
-    handleResize()
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
-
-  const filteredServices =
-    activeCategory === 'Todos'
-      ? services
-      : services.filter((s) => s.category === activeCategory)
-
-  const cardsPerView = isMobile ? 1 : 3
-  const gapPx = isMobile ? 16 : 24
-  const maxIndex = Math.max(0, filteredServices.length - cardsPerView)
-  const canPrev = carouselIndex > 0
-  const canNext = carouselIndex < maxIndex
-
-  function prev() {
-    setCarouselIndex((i) => Math.max(0, i - 1))
-  }
-
-  function next() {
-    setCarouselIndex((i) => Math.min(maxIndex, i + 1))
-  }
+export default function HomePage() {
+  const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
-    setCarouselIndex(0)
-  }, [activeCategory])
-
-  useEffect(() => {
-    const onScroll = () => setHeaderScrolled(window.scrollY > 30)
+    const onScroll = () => setScrolled(window.scrollY > 40)
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  // Lock body scroll when mobile menu is open
-  useEffect(() => {
-    document.body.style.overflow = menuOpen ? 'hidden' : ''
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [menuOpen])
-
-  // Mobile swipe support
-  function handleTouchStart(e: React.TouchEvent) {
-    touchStartX.current = e.targetTouches[0].clientX
-  }
-
-  function handleTouchMove(e: React.TouchEvent) {
-    touchEndX.current = e.targetTouches[0].clientX
-  }
-
-  function handleTouchEnd() {
-    if (!touchStartX.current || !touchEndX.current) return
-    const diff = touchStartX.current - touchEndX.current
-    if (diff > 45) {
-      next()
-    } else if (diff < -45) {
-      prev()
-    }
-    touchStartX.current = 0
-    touchEndX.current = 0
-  }
-
   return (
-    <main className="site-shell">
-      {/* ── HEADER ─────────────────────────────────────────── */}
-      <header className={headerScrolled ? 'site-header scrolled' : 'site-header'}>
-        <a href="#inicio" className="brand" aria-label="Loucas Por Esmaltes">
-          <span>Loucas Por Esmaltes</span>
-        </a>
-        <nav
-          className={menuOpen ? 'main-nav open' : 'main-nav'}
-          aria-label="Navegação principal"
-          onClick={() => setMenuOpen(false)}
-        >
-          <a href="#servicos">Serviços</a>
-          <a href="#esmaltes">Esmaltes</a>
-          <a href="#sobre">A loja</a>
-          <a href="#contato">Contato</a>
-          <a href={instagramUrl} target="_blank" rel="noreferrer">
-            Instagram ↗
-          </a>
-          <a className="nav-whatsapp" href={whatsappUrl} target="_blank" rel="noreferrer">
-            Agendar ↗
-          </a>
+    <main className="pres-shell">
+      {/* Ambient blobs */}
+      <div className="blob blob-a" aria-hidden="true" />
+      <div className="blob blob-b" aria-hidden="true" />
+      <div className="blob blob-c" aria-hidden="true" />
+
+      {/* ── TOPBAR ── */}
+      <header className={`pres-topbar ${scrolled ? 'scrolled' : ''}`}>
+        <div className="topbar-brand">
+          <div className="topbar-mark" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a1408" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
+          </div>
+          <div>
+            <span className="topbar-title">Sala de Casos</span>
+            <small>Segurança de Sistemas Computacionais</small>
+          </div>
+        </div>
+        <nav className="topbar-nav">
+          {SECTIONS.map(s => (
+            <a key={s.id} href={`#${s.id}`} className="topbar-link">{s.eyebrow}</a>
+          ))}
         </nav>
-        <a className="header-cta" href={whatsappUrl} target="_blank" rel="noreferrer">
-          Agendar horário <ArrowUpRight size={14} />
-        </a>
-        <button
-          className="menu-button"
-          aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'}
-          onClick={(e) => {
-            e.stopPropagation()
-            setMenuOpen(!menuOpen)
-          }}
-        >
-          {menuOpen ? <X size={22} /> : <Menu size={22} />}
-        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <Link href="/slides" className="topbar-cta" style={{ background: 'rgba(255,255,255,.06)', color: 'var(--text-light)', boxShadow: 'none', border: '1px solid var(--glass-brd)' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+            Ver Slides
+          </Link>
+          <Link href="/simulador" className="topbar-cta">
+            Abrir Simulador
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7" /><polyline points="7 7 17 7 17 17" /></svg>
+          </Link>
+        </div>
       </header>
 
-      {/* ── HERO ───────────────────────────────────────────── */}
-      <section className="hero" id="inicio">
-        <div className="hero-bg" style={{ backgroundImage: 'url(/hero-salon.jpg)' }} />
-        <div className="hero-overlay" />
-        <div className="hero-content">
-          <div className="hero-badge">
-
-            <span>Beleza que começa nos detalhes</span>
-          </div>
-          <h1>
-            Seu ritual de<br />
-            <em>cor</em> e cuidado.
+      <div className="pres-content">
+        {/* ── HERO ── */}
+        <section className="pres-hero" id="inicio">
+          <div className="hero-kicker">Trabalho de Apresentação</div>
+          <h1 className="hero-h1">
+            Quebra de<br />
+            <em>Confidencialidade</em>
           </h1>
-          <p className="hero-text">
-            Esmaltes escolhidos com carinho e serviços pensados para deixar suas mãos e pés ainda mais bonitos.
+          <p className="hero-sub">
+            Um simulador interativo de incidentes reais de segurança da informação.<br />
+            Explore cenários de engenharia social e falhas técnicas que comprometeram organizações ao redor do mundo.
           </p>
-          <div className="hero-actions">
-            <a className="btn btn-primary" href={whatsappUrl} target="_blank" rel="noreferrer">
-              Agendar pelo WhatsApp <ArrowUpRight size={16} />
-            </a>
-            <a className="btn btn-outline" href="#servicos">
-              Ver Serviços
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* ── INTRO STRIP ────────────────────────────────────── */}
-      <section className="intro-strip" id="sobre">
-        <div className="intro-left">
-          <p className="section-kicker">Loucas Por Esmaltes · Marabá, PA</p>
-          <p className="intro-statement">
-            Um espaço para escolher sua próxima cor, cuidar de si e sair se sentindo ainda mais você.
-          </p>
-        </div>
-        <div className="intro-features">
-          <div className="intro-feat">
-            <Heart size={16} />
-            <span>Atendimento personalizado</span>
-          </div>
-          <div className="intro-feat">
-            <Sparkles size={16} />
-            <span>Produtos de alta qualidade</span>
-          </div>
-          <a
-            className="intro-feat"
-            href={mapsUrl}
-            target="_blank"
-            rel="noreferrer"
-            title="Abrir endereço no Google Maps"
-          >
-            <MapPin size={16} />
-            <span>Marabá, PA ↗</span>
-          </a>
-        </div>
-      </section>
-
-      {/* ── SERVIÇOS (Inspirado fielmente na referência anexada) ── */}
-      <section className="services-section" id="servicos">
-        <div className="services-container">
-          <div className="services-head">
-            <h2>
-              Nossos <em>Serviços</em>
-            </h2>
-            <p className="services-subtitle">
-              Cuidados pensados para <strong>realçar sua beleza</strong> com sofisticação e carinho.
-            </p>
-            <div className="section-line">
-              <span className="section-dot" />
+          <div className="hero-meta">
+            <div className="hero-meta-item">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span>Segurança de Sistemas Computacionais</span>
+            </div>
+            <div className="hero-meta-sep" aria-hidden="true">·</div>
+            <div className="hero-meta-item">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span>{new Date().getFullYear()}</span>
             </div>
           </div>
 
-          {/* Filter tabs */}
-          <div className="filter-tabs" role="tablist">
-            {categories.map((cat) => (
-              <button
-                key={cat.key}
-                role="tab"
-                aria-selected={activeCategory === cat.key}
-                className={activeCategory === cat.key ? 'filter-tab active' : 'filter-tab'}
-                onClick={() => setActiveCategory(cat.key)}
-              >
-                {cat.label}
-              </button>
+          <div className="hero-actions">
+            <Link href="/simulador" className="hero-btn-primary">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Iniciar Simulador
+            </Link>
+            <Link href="/slides" className="hero-btn-outline">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+              Ver Slides
+            </Link>
+            <a href="#triade" className="hero-btn-outline">
+              Ver Conteúdo
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+            </a>
+          </div>
+
+          {/* Stats strip */}
+          <div className="hero-stats">
+            {[
+              { n: '10', label: 'Cenários interativos' },
+              { n: '6', label: 'Casos reais documentados' },
+              { n: '3', label: 'Ferramentas práticas' },
+              { n: '1', label: 'Painel do analista (SOC)' },
+            ].map(s => (
+              <div className="hero-stat" key={s.label}>
+                <span className="hero-stat-n">{s.n}</span>
+                <span className="hero-stat-l">{s.label}</span>
+              </div>
             ))}
           </div>
+        </section>
 
-          {/* Responsive Carousel */}
-          <div
-            className="carousel-wrap"
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-          >
-            <button
-              className={canPrev ? 'c-arrow prev' : 'c-arrow prev disabled'}
-              onClick={prev}
-              aria-label="Anterior"
-              disabled={!canPrev}
-            >
-              <ChevronLeft size={20} />
-            </button>
-
-            <div className="carousel-viewport">
-              <div
-                className="carousel-track"
-                style={{
-                  transform: `translateX(calc(-${carouselIndex * (100 / cardsPerView)}% - ${carouselIndex * gapPx}px))`,
-                }}
-              >
-                {filteredServices.map((s) => (
-                  <div className="svc-card" key={s.id}>
-                    <div className="svc-img">
-                      <img src={s.image} alt={s.name} loading="lazy" />
-                    </div>
-                    <div className="svc-body">
-                      <h3 className="svc-name">{s.name}</h3>
-                      <span className="svc-price">{s.price}</span>
-                      <a className="svc-btn" href={whatsappUrl} target="_blank" rel="noreferrer">
-                        <span>Agendar</span>
-                        <span className="svc-btn-circle">
-                          <ArrowRight size={14} />
-                        </span>
-                      </a>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <button
-              className={canNext ? 'c-arrow next' : 'c-arrow next disabled'}
-              onClick={next}
-              aria-label="Próximo"
-              disabled={!canNext}
-            >
-              <ChevronRight size={20} />
-            </button>
-          </div>
-
-          {filteredServices.length > cardsPerView && (
-            <div className="carousel-dots">
-              {Array.from({ length: maxIndex + 1 }).map((_, i) => (
-                <button
-                  key={i}
-                  className={i === carouselIndex ? 'c-dot active' : 'c-dot'}
-                  onClick={() => setCarouselIndex(i)}
-                  aria-label={`Slide ${i + 1}`}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* ── ESMALTES ───────────────────────────────────────── */}
-      <section className="polish-section section-wrap" id="esmaltes">
-        <div className="polish-head">
-          <div>
-            <p className="section-kicker">A prateleira da vez</p>
-            <h2>Cores que <em>falam.</em></h2>
-          </div>
-          <a className="text-link" href={whatsappUrl} target="_blank" rel="noreferrer">
-            Falar com a loja <ArrowUpRight size={15} />
-          </a>
-        </div>
-        <div className="polish-grid">
-          {[
-            { color: '#dc2f83', name: 'Rosa Manhã', swatch: 'Cremoso' },
-            { color: '#8c1c70', name: 'Uva Intensa', swatch: 'Cremoso' },
-            { color: '#f08aae', name: 'Ballet', swatch: 'Delicado' },
-            { color: '#64145f', name: 'Noite em Marabá', swatch: 'Cremoso' },
-          ].map((p, i) => (
-            <div className="polish-card" key={p.name}>
-              <div
-                className="polish-visual"
-                style={{ background: `linear-gradient(145deg, ${p.color} 0%, #3a123e 100%)` }}
-              >
-                <div className="pb">
-                  <div className="pb-cap" />
-                  <div className="pb-body" style={{ background: `linear-gradient(135deg, ${p.color}cc, ${p.color})` }} />
+        {/* ── MEMBERS ── */}
+        <RevealSection className="members-section">
+          <p className="members-eyebrow">Grupo</p>
+          <div className="members-grid">
+            {MEMBERS.map((m) => (
+              <div className="member-card" key={m.name}>
+                <div className="member-avatar" aria-hidden="true">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                  </svg>
                 </div>
-                <span className="polish-num">0{i + 1}</span>
-              </div>
-              <div className="polish-info">
                 <div>
-                  <strong>{p.name}</strong>
-                  <span>{p.swatch}</span>
+                  <p className="member-name">{m.name}</p>
+                  <p className="member-ra">{m.ra}</p>
                 </div>
-                <Heart size={16} className="polish-heart" />
+              </div>
+            ))}
+          </div>
+        </RevealSection>
+
+        {/* ── CONTENT SECTIONS ── */}
+        {SECTIONS.map((sec, i) => (
+          <section className="pres-section" id={sec.id} key={sec.id}>
+            <RevealSection delay={0}>
+              <div className="sec-eyebrow">{sec.eyebrow}</div>
+              <div className="sec-head">
+                <div className="sec-icon" aria-hidden="true">{sec.icon}</div>
+                <h2 className="sec-h2">{sec.title}</h2>
+              </div>
+            </RevealSection>
+            <RevealSection delay={80}>
+              {sec.content}
+            </RevealSection>
+          </section>
+        ))}
+
+        {/* ── CTA FINAL ── */}
+        <RevealSection>
+          <div className="cta-final">
+            <div className="cta-glow" aria-hidden="true" />
+            <div className="cta-inner">
+              <div className="cta-eyebrow">Simulador Interativo</div>
+              <h2 className="cta-title">Explore os cenários<br />na prática</h2>
+              <p className="cta-desc">
+                Dez casos com interfaces únicas: e-mails de phishing, terminais de acesso remoto, painéis SOC, formulários de injeção SQL e muito mais.
+              </p>
+              <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <Link href="/simulador" className="cta-btn">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  Abrir o Simulador Completo
+                </Link>
+                <Link href="/slides" className="cta-btn" style={{ background: 'rgba(255,255,255,.06)', color: 'var(--text-light)', border: '1px solid var(--glass-brd)', boxShadow: 'none' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+                  Ver Slides
+                </Link>
               </div>
             </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── CONTATO & LOCALIZAÇÃO ───────────────────────────── */}
-      <section className="contact-section" id="contato">
-        <div className="contact-glow" />
-
-        <div className="contact-content">
-          <p className="eyebrow light">
-            Vamos marcar seu momento?
-          </p>
-          <h2>
-            Agende seu horário<br />
-            <em>pelo WhatsApp.</em>
-          </h2>
-          <p className="contact-desc">
-            Venha conhecer nosso espaço em Marabá, escolher suas cores favoritas e viver uma experiência completa de cuidado e beleza.
-          </p>
-          <a className="btn btn-light" href={whatsappUrl} target="_blank" rel="noreferrer">
-            Chamar no WhatsApp <ArrowUpRight size={16} />
-          </a>
-        </div>
-
-        {/* Card Interativo com Mapa e Informações (Conforme solicitado) */}
-        <div className="location-card">
-          <div className="map-frame">
-            <iframe
-              title="Mapa Loucas Por Esmaltes Marabá"
-              src="https://maps.google.com/maps?q=Av.+Castelo+Branco,+1887+-+Marab%C3%A1,+PA&t=&z=15&ie=UTF8&iwloc=&output=embed"
-              width="100%"
-              height="100%"
-              style={{ border: 0 }}
-              allowFullScreen={false}
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-            />
           </div>
+        </RevealSection>
 
-          <div className="location-card-body">
-            <h3 className="location-card-title">Loucas Por Esmaltes — Marabá</h3>
-
-            <div className="location-item">
-              <div className="loc-icon-circle">
-                <MapPin size={18} />
-              </div>
-              <div className="loc-text">
-                <span className="loc-label">Endereço</span>
-                <p className="loc-value">
-                  Av. Castelo Branco, nº 1887<br />
-                  Marabá — PA · 68501-700
-                </p>
-              </div>
-            </div>
-
-            <div className="location-item">
-              <div className="loc-icon-circle">
-                <Phone size={18} />
-              </div>
-              <div className="loc-text">
-                <span className="loc-label">WhatsApp</span>
-                <a className="loc-value loc-link" href={whatsappUrl} target="_blank" rel="noreferrer">
-                  (94) 99149-2417
-                </a>
-              </div>
-            </div>
-
-            <a
-              className="location-map-btn"
-              href={mapsUrl}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <ArrowUpRight size={16} />
-              <span>Ver no Google Maps</span>
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* ── FOOTER ─────────────────────────────────────────── */}
-      <footer className="site-footer">
-        <div className="footer-inner">
-          <div className="footer-col footer-col-brand">
-            <a href="#inicio" className="footer-logo-text">Loucas Por Esmaltes</a>
-            <p className="footer-about">
-              Espaço especializado em cuidados para mãos e pés em Marabá, PA.
-              Venha nos visitar e sinta a diferença de um atendimento feito com carinho.
-            </p>
-            <div className="footer-social">
-              <a
-                href={instagramUrl}
-                aria-label="Instagram @loucasporesmaltesmaraba"
-                target="_blank"
-                rel="noreferrer"
-                title="Siga no Instagram"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-                  <circle cx="12" cy="12" r="4" />
-                  <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
-                </svg>
-              </a>
-              <a href={whatsappUrl} aria-label="WhatsApp" target="_blank" rel="noreferrer" title="Falar no WhatsApp">
-                <Phone size={16} />
-              </a>
-            </div>
-          </div>
-
-          <div className="footer-col">
-            <h4 className="footer-col-title">Navegação</h4>
-            <ul className="footer-links">
-              <li><a href="#servicos">Serviços</a></li>
-              <li><a href="#esmaltes">Esmaltes</a></li>
-              <li><a href="#sobre">A loja</a></li>
-              <li><a href="#contato">Contato</a></li>
-              <li><a href={instagramUrl} target="_blank" rel="noreferrer">Instagram ↗</a></li>
-              <li><a href={whatsappUrl} target="_blank" rel="noreferrer">Agendar horário</a></li>
-            </ul>
-          </div>
-
-          <div className="footer-col">
-            <h4 className="footer-col-title">Contato &amp; Localização</h4>
-            <ul className="footer-contact-list">
-              <li>
-                <MapPin size={13} />
-                <a href={mapsUrl} target="_blank" rel="noreferrer" title="Ver no Google Maps">
-                  Av. Castelo Branco, nº 1887<br />Marabá, PA · 68501-700 ↗
-                </a>
-              </li>
-              <li>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-                  <circle cx="12" cy="12" r="4" />
-                  <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
-                </svg>
-                <a href={instagramUrl} target="_blank" rel="noreferrer">
-                  @loucasporesmaltesmaraba ↗
-                </a>
-              </li>
-              <li>
-                <Phone size={13} />
-                <a href={whatsappUrl} target="_blank" rel="noreferrer">(94) 99149-2417</a>
-              </li>
-              <li>
-                <Clock3 size={13} />
-                <span>Consulte horários pelo WhatsApp</span>
-              </li>
-            </ul>
-          </div>
-
-          <div className="footer-col">
-            <h4 className="footer-col-title">Serviços</h4>
-            <ul className="footer-links">
-              <li><a href="#servicos">Manicure Clássica</a></li>
-              <li><a href="#servicos">Pedicure Spa</a></li>
-              <li><a href="#servicos">Esmaltação em Gel</a></li>
-              <li><a href="#servicos">Alongamento em Gel</a></li>
-              <li><a href="#servicos">Banho em Gel Esmaltado</a></li>
-            </ul>
-          </div>
-        </div>
-
-        <div className="footer-bottom">
-          <p>&copy; {new Date().getFullYear()} Loucas Por Esmaltes · Marabá, PA. Todos os direitos reservados.</p>
-          <p className="footer-tagline">Cor, cuidado e um tempo só seu.</p>
-        </div>
-      </footer>
+        {/* ── FOOTER ── */}
+        <footer className="pres-footer">
+          <p>Simulador de Quebra de Confidencialidade · Segurança de Sistemas Computacionais · {new Date().getFullYear()}</p>
+        </footer>
+      </div>
     </main>
   )
 }

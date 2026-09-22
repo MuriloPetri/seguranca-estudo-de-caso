@@ -1,0 +1,1515 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quebra de Confidencialidade — Slides</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* =========================================================
+     TOKENS
+  ========================================================= */
+  :root {
+    --ink:      #0c1220;
+    --ink-2:    #131c2e;
+    --ink-3:    #1a2540;
+    --line:     #273652;
+    --text:     #e2e8f6;
+    --dim:      #8a9ab8;
+    --muted:    #4e607e;
+    --warm:     #ffb454;
+    --warm-2:   #ff8a6a;
+    --cool:     #7cb8e8;
+    --safe:     #5fd897;
+    --danger:   #ff7a68;
+    --human:    #e0a06a;
+    --tech:     #7cb8e8;
+    --serif:    "Fraunces","Georgia",serif;
+    --sans:     "Inter",-apple-system,sans-serif;
+    --mono:     "SFMono-Regular",Consolas,monospace;
+    --grad:     linear-gradient(135deg,#ffcf86,#ff8a6a 55%,#e0648a);
+    --grad-cool:linear-gradient(135deg,#6fa8e0,#5fd897);
+    --glass:    rgba(19,28,46,.7);
+    --gbrd:     rgba(255,255,255,.08);
+    --r:        16px;
+    --r-lg:     22px;
+    --r-pill:   999px;
+  }
+
+  /* =========================================================
+     BASE
+  ========================================================= */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: var(--ink);
+    color: var(--text);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+  }
+
+  /* rich bg */
+  body {
+    background:
+      radial-gradient(ellipse 1400px 800px at 10% -5%,  #1e2d42 0%, var(--ink) 60%),
+      radial-gradient(ellipse 1000px 700px at 95%  5%,  #1a2538 0%, var(--ink) 65%),
+      var(--ink);
+  }
+  body::before {
+    content:""; position:fixed; inset:0; z-index:0;
+    pointer-events:none; opacity:.04; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* ambient blobs */
+  .blob { position:fixed; z-index:0; border-radius:50%; filter:blur(100px); pointer-events:none; opacity:.22; }
+  .ba { width:550px; height:550px; top:-200px; left:-160px;
+        background:radial-gradient(circle,#ff8a6a,transparent 70%);
+        animation:d1 24s ease-in-out infinite alternate; }
+  .bb { width:480px; height:480px; top:80px; right:-200px;
+        background:radial-gradient(circle,#6fa8e0,transparent 70%);
+        animation:d2 28s ease-in-out infinite alternate; }
+  .bc { width:420px; height:420px; bottom:-180px; left:38%;
+        background:radial-gradient(circle,#5fd897,transparent 70%);
+        animation:d1 32s ease-in-out infinite alternate-reverse; }
+  @keyframes d1{from{transform:translate(0,0) scale(1);}to{transform:translate(40px,30px) scale(1.08);}}
+  @keyframes d2{from{transform:translate(0,0) scale(1);}to{transform:translate(-30px,40px) scale(1.05);}}
+  @media(prefers-reduced-motion:reduce){.blob{animation:none;}}
+
+  /* =========================================================
+     DECK SHELL
+  ========================================================= */
+  #deck {
+    position: relative;
+    z-index: 1;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* =========================================================
+     PROGRESS BAR
+  ========================================================= */
+  #progress-bar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 3px;
+    background: var(--grad);
+    transition: width 0.4s ease;
+    z-index: 100;
+    border-radius: 0 3px 3px 0;
+    box-shadow: 0 0 12px rgba(255,138,106,.6);
+  }
+
+  /* =========================================================
+     TOPBAR
+  ========================================================= */
+  #topbar {
+    position: fixed;
+    top: 14px; left: 50%; transform: translateX(-50%);
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 18px;
+    background: var(--glass);
+    border: 1px solid var(--gbrd);
+    border-radius: var(--r-pill);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0 8px 32px rgba(0,0,0,.4);
+    white-space: nowrap;
+  }
+  #topbar .brand {
+    font-family: var(--serif);
+    font-size: .9rem;
+    font-weight: 600;
+    color: var(--text);
+    display: flex; align-items: center; gap: 9px;
+  }
+  .brand-mark {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: var(--grad);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .brand-mark svg { width:14px; height:14px; stroke:#1a1408; fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+  #topbar .sep { color: var(--line); }
+  #slide-counter {
+    font-size: .76rem;
+    font-weight: 600;
+    color: var(--dim);
+    font-family: var(--mono);
+  }
+  #slide-counter b { color: var(--warm); }
+  .kb-hint {
+    font-size: .68rem;
+    color: var(--muted);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .kb-key {
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: .65rem;
+    color: var(--dim);
+    background: rgba(255,255,255,.05);
+  }
+
+  /* =========================================================
+     SLIDES VIEWPORT
+  ========================================================= */
+  #slides-viewport {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 60px 70px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .45s ease, transform .45s cubic-bezier(.22,.9,.35,1);
+    transform: translateX(60px);
+    will-change: transform, opacity;
+  }
+  .slide.active {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0);
+  }
+  .slide.prev {
+    opacity: 0;
+    transform: translateX(-60px);
+  }
+
+  /* =========================================================
+     BOTTOM NAV
+  ========================================================= */
+  #bottom-nav {
+    position: fixed;
+    bottom: 24px; left: 50%; transform: translateX(-50%);
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .nav-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: var(--glass);
+    border: 1px solid var(--gbrd);
+    color: var(--text);
+    cursor: pointer;
+    transition: background .2s, border-color .2s, transform .15s;
+    backdrop-filter: blur(12px);
+  }
+  .nav-btn:hover:not(:disabled) {
+    background: rgba(255,255,255,.12);
+    border-color: rgba(255,255,255,.18);
+    transform: scale(1.05);
+  }
+  .nav-btn:disabled { opacity: .3; cursor: not-allowed; }
+  .nav-btn svg { width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+
+  .dots-wrap {
+    display: flex; gap: 6px; align-items: center;
+    padding: 0 4px;
+  }
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: all .3s ease;
+    cursor: pointer;
+  }
+  .dot.active {
+    background: var(--warm);
+    width: 22px;
+    border-radius: var(--r-pill);
+  }
+
+  /* =========================================================
+     SLIDE LAYOUTS
+  ========================================================= */
+
+  /* — eyebrow — */
+  .eyebrow {
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--warm);
+    margin-bottom: 18px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .eyebrow::before {
+    content: "";
+    display: block;
+    width: 28px; height: 2px;
+    background: var(--grad);
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* — slide title — */
+  .slide-title {
+    font-family: var(--serif);
+    font-weight: 600;
+    line-height: 1.08;
+    letter-spacing: -.025em;
+    color: var(--text);
+  }
+  .slide-title em {
+    background: var(--grad);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-style: italic;
+  }
+  .slide-title .cool-em {
+    background: var(--grad-cool);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-style: normal;
+  }
+
+  .slide-sub {
+    color: var(--dim);
+    line-height: 1.65;
+    max-width: 620px;
+  }
+
+  /* ── COVER ── */
+  .slide-cover {
+    text-align: center;
+    max-width: 780px;
+    width: 100%;
+  }
+  .cover-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: .72rem; font-weight: 700; letter-spacing: .14em;
+    text-transform: uppercase;
+    background: rgba(255,180,84,.1);
+    border: 1px solid rgba(255,180,84,.22);
+    color: var(--warm);
+    padding: 7px 18px;
+    border-radius: var(--r-pill);
+    margin-bottom: 30px;
+  }
+  .cover-badge svg { width:13px; height:13px; stroke:var(--warm); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .cover-title {
+    font-family: var(--serif);
+    font-size: clamp(3.2rem, 7vw, 5.8rem);
+    font-weight: 700;
+    line-height: 1.03;
+    letter-spacing: -.03em;
+    color: var(--text);
+    margin-bottom: 24px;
+  }
+  .cover-title em {
+    background: var(--grad);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-style: italic;
+  }
+  .cover-desc {
+    font-size: 1.05rem;
+    color: var(--dim);
+    max-width: 560px;
+    margin: 0 auto 40px;
+    line-height: 1.7;
+  }
+  .cover-meta {
+    display: flex; align-items: center; justify-content: center;
+    gap: 24px; flex-wrap: wrap;
+    padding: 18px 30px;
+    border: 1px solid var(--gbrd);
+    border-radius: var(--r-lg);
+    background: var(--glass);
+    backdrop-filter: blur(14px);
+    margin: 0 auto;
+    max-width: 520px;
+  }
+  .cover-meta-item {
+    display: flex; align-items: center; gap: 8px;
+    font-size: .82rem; color: var(--dim);
+  }
+  .cover-meta-item svg { width:14px; height:14px; stroke:var(--warm); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
+  .cover-meta-sep { color: var(--line); }
+
+  /* ── CONTENT STANDARD ── */
+  .slide-inner {
+    width: 100%;
+    max-width: 960px;
+  }
+  .slide-head {
+    margin-bottom: 36px;
+  }
+
+  /* ── CIA DIAGRAM ── */
+  .cia-flex {
+    display: flex;
+    gap: 16px;
+    align-items: stretch;
+    width: 100%;
+  }
+  .cia-card {
+    flex: 1;
+    background: var(--glass);
+    border: 1px solid var(--gbrd);
+    border-radius: var(--r-lg);
+    padding: 28px 24px;
+    backdrop-filter: blur(16px);
+    border-top: 3px solid var(--line);
+    transition: transform .25s, box-shadow .25s;
+    position: relative;
+  }
+  .cia-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,.35); }
+  .cia-card.c-intact { border-top-color: var(--cool); }
+  .cia-card.c-avail  { border-top-color: var(--safe); }
+  .cia-card.c-conf   { border-top-color: var(--warm); background: rgba(255,180,84,.06); border-color: rgba(255,180,84,.2); }
+  .cia-icon {
+    width: 48px; height: 48px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 16px;
+    font-size: 1.5rem;
+  }
+  .cia-card.c-intact .cia-icon { background: rgba(124,184,232,.12); }
+  .cia-card.c-avail  .cia-icon { background: rgba(95,216,151,.12); }
+  .cia-card.c-conf   .cia-icon { background: rgba(255,180,84,.12); }
+  .cia-card h3 {
+    font-family: var(--serif);
+    font-size: 1.3rem;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+  .cia-card p { font-size: .88rem; color: var(--dim); line-height: 1.6; }
+  .cia-target-tag {
+    position: absolute;
+    top: -12px; left: 50%; transform: translateX(-50%);
+    background: var(--warm);
+    color: #1a1408;
+    font-size: .64rem;
+    font-weight: 800;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    padding: 4px 14px;
+    border-radius: var(--r-pill);
+    white-space: nowrap;
+  }
+
+  /* ── TWO-COL ── */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .col-card {
+    background: var(--glass);
+    border: 1px solid var(--gbrd);
+    border-radius: var(--r-lg);
+    padding: 28px;
+    backdrop-filter: blur(16px);
+    border-left: 4px solid var(--line);
+  }
+  .col-card.human { border-left-color: var(--human); }
+  .col-card.tech  { border-left-color: var(--tech);  }
+  .col-type {
+    display: inline-block;
+    font-size: .66rem; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase;
+    padding: 4px 12px; border-radius: var(--r-pill);
+    margin-bottom: 14px;
+  }
+  .col-card.human .col-type { color: var(--human); background: rgba(224,160,106,.12); border: 1px solid rgba(224,160,106,.25); }
+  .col-card.tech  .col-type { color: var(--tech);  background: rgba(124,184,232,.12); border: 1px solid rgba(124,184,232,.25); }
+  .col-card h3 { font-family: var(--serif); font-size: 1.25rem; color: var(--text); margin-bottom: 10px; }
+  .col-card p  { font-size: .88rem; color: var(--dim); line-height: 1.6; margin-bottom: 16px; }
+  .tag-list { display: flex; flex-wrap: wrap; gap: 7px; }
+  .tag {
+    font-size: .72rem; font-weight: 600;
+    padding: 4px 11px;
+    border-radius: var(--r-pill);
+    border: 1px solid var(--line);
+    color: var(--dim);
+  }
+
+  /* ── CASE CARD ── */
+  .case-layout {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 24px;
+    align-items: start;
+    width: 100%;
+    max-width: 900px;
+  }
+  .case-meta-panel {
+    background: var(--glass);
+    border: 1px solid var(--gbrd);
+    border-radius: var(--r-lg);
+    padding: 28px;
+    backdrop-filter: blur(16px);
+  }
+  .case-year {
+    font-family: var(--serif);
+    font-size: 3.5rem;
+    font-weight: 700;
+    line-height: 1;
+    background: var(--grad);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+  }
+  .case-org {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .case-type-tag {
+    display: inline-block;
+    font-size: .66rem; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase;
+    padding: 4px 12px; border-radius: var(--r-pill);
+  }
+  .case-type-tag.human { color: var(--human); background: rgba(224,160,106,.12); border: 1px solid rgba(224,160,106,.25); }
+  .case-type-tag.tech  { color: var(--tech);  background: rgba(124,184,232,.12); border: 1px solid rgba(124,184,232,.25); }
+  .case-content-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .case-desc-card {
+    background: var(--glass);
+    border: 1px solid var(--gbrd);
+    border-radius: var(--r-lg);
+    padding: 24px;
+    backdrop-filter: blur(16px);
+  }
+  .case-desc-card .label {
+    font-size: .66rem; font-weight: 700; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+  }
+  .case-desc-card p { font-size: .92rem; color: var(--text); line-height: 1.65; }
+  .lessons-card {
+    background: rgba(95,216,151,.06);
+    border: 1px solid rgba(95,216,151,.15);
+    border-radius: var(--r-lg);
+    padding: 20px 24px;
+  }
+  .lessons-card .label {
+    font-size: .66rem; font-weight: 700; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--safe); margin-bottom: 10px;
+  }
+  .lessons-card ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .lessons-card li {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: .84rem; color: var(--dim); line-height: 1.55;
+  }
+  .lessons-card li::before {
+    content: "✓";
+    color: var(--safe);
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* ── PRINCIPLES LIST ── */
+  .principles-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+  .principle-item {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    background: var(--glass);
+    border: 1px solid var(--gbrd);
+    border-radius: var(--r);
+    padding: 16px 20px;
+    backdrop-filter: blur(14px);
+    border-left: 3px solid var(--line);
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .principle-item:hover { box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+  .principle-item.human { border-left-color: var(--human); }
+  .principle-item.tech  { border-left-color: var(--tech); }
+  .pi-num {
+    font-family: var(--serif);
+    font-size: 1.8rem;
+    color: var(--line);
+    font-weight: 600;
+    flex-shrink: 0;
+    width: 36px;
+    text-align: center;
+    line-height: 1;
+  }
+  .pi-body { flex: 1; }
+  .pi-name {
+    font-family: var(--serif);
+    font-size: 1rem;
+    color: var(--text);
+    margin-bottom: 3px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .pi-badge {
+    font-size: .62rem; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; padding: 2px 9px; border-radius: var(--r-pill);
+  }
+  .pi-badge.human { color: var(--human); background: rgba(224,160,106,.1); border: 1px solid rgba(224,160,106,.2); }
+  .pi-badge.tech  { color: var(--tech);  background: rgba(124,184,232,.1); border: 1px solid rgba(124,184,232,.2); }
+  .pi-ex { font-size: .78rem; color: var(--muted); font-style: italic; }
+
+  /* ── STATS ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    width: 100%;
+  }
+  .stat-card {
+    background: var(--glass);
+    border: 1px solid var(--gbrd);
+    border-radius: var(--r-lg);
+    padding: 24px 18px;
+    text-align: center;
+    backdrop-filter: blur(14px);
+    transition: transform .2s, box-shadow .2s;
+  }
+  .stat-card:hover { transform: translateY(-4px); box-shadow: 0 16px 36px rgba(0,0,0,.3); }
+  .stat-n {
+    font-family: var(--serif);
+    font-size: 2.8rem;
+    font-weight: 600;
+    background: var(--grad);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .stat-l { font-size: .78rem; color: var(--dim); line-height: 1.4; }
+
+  /* ── SIMULATOR PREVIEW ── */
+  .sim-preview {
+    background: var(--glass);
+    border: 1px solid var(--gbrd);
+    border-radius: var(--r-lg);
+    padding: 36px 40px;
+    backdrop-filter: blur(16px);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+  }
+  .sim-glow {
+    position: absolute; inset:-80px;
+    background: radial-gradient(circle at 50% 60%, rgba(255,138,106,.18) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .sim-preview-inner { position: relative; z-index: 1; }
+  .sim-feature-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 28px 0;
+  }
+  .sim-feat {
+    background: rgba(255,255,255,.05);
+    border: 1px solid var(--gbrd);
+    border-radius: var(--r);
+    padding: 16px;
+    text-align: left;
+  }
+  .sim-feat .fi { font-size: 1.4rem; margin-bottom: 8px; }
+  .sim-feat h5 { font-size: .85rem; color: var(--text); margin-bottom: 4px; }
+  .sim-feat p  { font-size: .76rem; color: var(--dim); line-height: 1.5; }
+  .sim-cta-btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: var(--grad);
+    color: #1a1408;
+    font-size: .9rem;
+    font-weight: 700;
+    padding: 14px 28px;
+    border-radius: var(--r-pill);
+    border: none; cursor: pointer;
+    box-shadow: 0 8px 24px rgba(255,138,106,.35);
+    transition: box-shadow .2s, transform .15s;
+    text-decoration: none;
+  }
+  .sim-cta-btn:hover { box-shadow: 0 14px 36px rgba(255,138,106,.5); transform: translateY(-2px); }
+  .sim-cta-btn svg { width:17px; height:17px; stroke:#1a1408; fill:none; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; }
+
+  /* ── CONCLUSION ── */
+  .conclusion-card {
+    background: var(--glass);
+    border: 1px solid var(--gbrd);
+    border-radius: var(--r-lg);
+    padding: 32px;
+    backdrop-filter: blur(16px);
+    width: 100%;
+  }
+  .conclusion-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .conclusion-list li {
+    display: flex; align-items: flex-start; gap: 14px;
+    font-size: .94rem;
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .cl-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--grad);
+    color: #1a1408;
+    font-size: .78rem;
+    font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* ── SECTION DIVIDER ── */
+  .slide-section-divider {
+    text-align: center;
+    max-width: 680px;
+    width: 100%;
+  }
+  .divider-number {
+    font-family: var(--serif);
+    font-size: 8rem;
+    font-weight: 700;
+    color: var(--ink-2);
+    line-height: 1;
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 0;
+    letter-spacing: -.05em;
+  }
+  .slide-section-divider > * { position: relative; z-index: 1; }
+
+  /* case overview all-6 */
+  .cases-overview-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    width: 100%;
+  }
+  .co-card {
+    background: var(--glass);
+    border: 1px solid var(--gbrd);
+    border-radius: var(--r);
+    padding: 18px;
+    backdrop-filter: blur(14px);
+    border-left: 3px solid var(--line);
+    transition: transform .2s, box-shadow .2s;
+  }
+  .co-card:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(0,0,0,.3); }
+  .co-card.human { border-left-color: var(--human); }
+  .co-card.tech  { border-left-color: var(--tech); }
+  .co-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 8px;
+  }
+  .co-year { font-family: var(--mono); font-size: .76rem; color: var(--muted); font-weight: 600; }
+  .co-badge {
+    font-size: .62rem; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; padding: 2px 8px; border-radius: var(--r-pill);
+  }
+  .co-badge.human { color: var(--human); background: rgba(224,160,106,.12); border: 1px solid rgba(224,160,106,.22); }
+  .co-badge.tech  { color: var(--tech);  background: rgba(124,184,232,.12); border: 1px solid rgba(124,184,232,.22); }
+  .co-org { font-family: var(--serif); font-size: 1rem; color: var(--text); margin-bottom: 6px; }
+  .co-desc { font-size: .78rem; color: var(--dim); line-height: 1.5; }
+  /* =========================================================
+     PRINT / PDF EXPORT
+  ========================================================= */
+  @media print {
+    @page { size: landscape; margin: 0; }
+    body, html { 
+      background: #0f1624 !important; 
+      color: #e2e8f6 !important; 
+      height: auto !important; 
+      overflow: visible !important; 
+    }
+    .blob, #topbar, #bottom-nav, #progress-bar { display: none !important; }
+    
+    #deck, #slides-viewport {
+      display: block !important;
+      position: relative !important;
+      height: auto !important;
+      overflow: visible !important;
+    }
+    
+    .slide {
+      position: relative !important;
+      display: flex !important;
+      height: 100vh !important;
+      page-break-after: always;
+      page-break-inside: avoid;
+      opacity: 1 !important;
+      transform: none !important;
+      pointer-events: auto !important;
+      visibility: visible !important;
+      padding: 40px !important;
+      background: #0f1624 !important;
+    }
+
+    /* Keep background colors for print */
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- Ambient -->
+<div class="blob ba" aria-hidden="true"></div>
+<div class="blob bb" aria-hidden="true"></div>
+<div class="blob bc" aria-hidden="true"></div>
+
+<!-- Progress -->
+<div id="progress-bar"></div>
+
+<!-- Topbar -->
+<div id="topbar">
+  <div class="brand">
+    <div class="brand-mark">
+      <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    </div>
+    Sala de Casos
+  </div>
+  <span class="sep">·</span>
+  <span id="slide-counter">Slide <b id="cur">1</b> de <b id="tot">14</b></span>
+  <span class="sep">·</span>
+  <span class="kb-hint">
+    <span class="kb-key">←</span><span class="kb-key">→</span> navegar
+    &nbsp;·&nbsp;
+    <span class="kb-key">F</span> tela cheia
+  </span>
+</div>
+
+<!-- Deck -->
+<div id="deck">
+  <div id="slides-viewport">
+
+    <!-- ══════════════════════════════════════════════
+         SLIDE 1 — CAPA
+    ══════════════════════════════════════════════ -->
+    <div class="slide active" id="s1">
+      <div class="slide-cover">
+        <div class="cover-badge">
+          <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Trabalho de Apresentação
+        </div>
+        <h1 class="cover-title">
+          Quebra de<br><em>Confidencialidade</em>
+        </h1>
+        <p class="cover-desc">
+          Simulador interativo de incidentes reais de segurança da informação — engenharia social, falhas técnicas e os gatilhos que permitiram os maiores vazamentos de dados documentados.
+        </p>
+        <div class="cover-meta">
+          <div class="cover-meta-item">
+            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Segurança de Sistemas Computacionais
+          </div>
+          <span class="cover-meta-sep">·</span>
+          <div class="cover-meta-item">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <script>document.write(new Date().getFullYear())</script>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         SLIDE 2 — A TRÍADE CIA
+    ══════════════════════════════════════════════ -->
+    <div class="slide" id="s2">
+      <div class="slide-inner">
+        <div class="slide-head">
+          <div class="eyebrow">Fundamentos</div>
+          <h2 class="slide-title" style="font-size:clamp(2rem,4vw,3rem);">A Tríade <em>CIA</em></h2>
+          <p class="slide-sub" style="margin-top:10px; font-size:.9rem;">Os três pilares da segurança da informação — esta simulação foca no terceiro.</p>
+        </div>
+        <div class="cia-flex">
+          <div class="cia-card c-intact">
+            <div class="cia-icon">🔒</div>
+            <h3>Integridade</h3>
+            <p>A informação não pode ser alterada indevidamente por pessoas não autorizadas. Os dados devem ser confiáveis e íntegros.</p>
+          </div>
+          <div class="cia-card c-avail">
+            <div class="cia-icon">⚡</div>
+            <h3>Disponibilidade</h3>
+            <p>A informação precisa estar acessível e utilizável quando necessário, para quem tem autorização.</p>
+          </div>
+          <div class="cia-card c-conf">
+            <div class="cia-target-tag">🎯 Foco desta simulação</div>
+            <div class="cia-icon">🛡️</div>
+            <h3>Confidencialidade</h3>
+            <p>Somente pessoas devidamente autorizadas podem acessar a informação. É o pilar mais violado em incidentes de alto impacto.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         SLIDE 3 — COMO A CONFIDENCIALIDADE É QUEBRADA
+    ══════════════════════════════════════════════ -->
+    <div class="slide" id="s3">
+      <div class="slide-inner">
+        <div class="slide-head">
+          <div class="eyebrow">Vetores de Ataque</div>
+          <h2 class="slide-title" style="font-size:clamp(2rem,4vw,3rem);">Duas maneiras de <em>quebrar</em> a confidencialidade</h2>
+        </div>
+        <div class="two-col">
+          <div class="col-card human">
+            <div class="col-type">Falha Humana</div>
+            <h3>Engenharia Social</h3>
+            <p>A pessoa autorizada é convencida a entregar credenciais voluntariamente — por e-mail, ligação, SMS ou instalador infectado baixado da internet.</p>
+            <div class="tag-list">
+              <span class="tag">Phishing</span>
+              <span class="tag">Vishing</span>
+              <span class="tag">Smishing</span>
+              <span class="tag">Pretexting</span>
+              <span class="tag">Baiting</span>
+            </div>
+          </div>
+          <div class="col-card tech">
+            <div class="col-type">Falha Técnica</div>
+            <h3>Vulnerabilidade de Sistema</h3>
+            <p>Uma configuração aberta, código vulnerável a injeção, ou uma atualização não aplicada deixa a porta destrancada sem qualquer interação humana.</p>
+            <div class="tag-list">
+              <span class="tag">SQL Injection</span>
+              <span class="tag">SSRF</span>
+              <span class="tag">Patch não aplicado</span>
+              <span class="tag">Excesso de permissão</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         SLIDE 4 — VISÃO GERAL DOS CASOS
+    ══════════════════════════════════════════════ -->
+    <div class="slide" id="s4">
+      <div class="slide-inner">
+        <div class="slide-head">
+          <div class="eyebrow">Casos Reais</div>
+          <h2 class="slide-title" style="font-size:clamp(1.8rem,3.5vw,2.6rem);">Seis incidentes que <em>moldaram</em> a segurança moderna</h2>
+        </div>
+        <div class="cases-overview-grid">
+          <div class="co-card human">
+            <div class="co-header"><span class="co-year">2011</span><span class="co-badge human">Humana</span></div>
+            <div class="co-org">RSA Security</div>
+            <p class="co-desc">Planilha Excel com exploit zero-day enviada por phishing comprometeu tokens SecurID usados por 40 mi de pessoas.</p>
+          </div>
+          <div class="co-card human">
+            <div class="co-header"><span class="co-year">2020</span><span class="co-badge human">Humana</span></div>
+            <div class="co-org">Twitter</div>
+            <p class="co-desc">Vishing contra funcionários do suporte comprometeu 130 contas verificadas, incluindo Obama e Elon Musk.</p>
+          </div>
+          <div class="co-card tech">
+            <div class="co-header"><span class="co-year">2021</span><span class="co-badge tech">Técnica</span></div>
+            <div class="co-org">Colonial Pipeline</div>
+            <p class="co-desc">Conta VPN legada sem 2FA usada para instalar ransomware — 45% do combustível do leste dos EUA paralisado.</p>
+          </div>
+          <div class="co-card tech">
+            <div class="co-header"><span class="co-year">2017</span><span class="co-badge tech">Técnica</span></div>
+            <div class="co-org">Equifax</div>
+            <p class="co-desc">Vulnerabilidade Apache Struts não corrigida por 9 semanas expôs dados de 147 mi de pessoas.</p>
+          </div>
+          <div class="co-card tech">
+            <div class="co-header"><span class="co-year">2019</span><span class="co-badge tech">Técnica</span></div>
+            <div class="co-org">Capital One</div>
+            <p class="co-desc">SSRF + permissões excessivas no firewall resultaram em dados de 106 mi de clientes expostos.</p>
+          </div>
+          <div class="co-card human">
+            <div class="co-header"><span class="co-year">2022</span><span class="co-badge human">Humana</span></div>
+            <div class="co-org">Twilio · 0ktapus</div>
+            <p class="co-desc">Smishing em larga escala capturava OTPs em tempo real, driblando autenticação em duas etapas.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         SLIDE 5 — RSA Security
+    ══════════════════════════════════════════════ -->
+    <div class="slide" id="s5">
+      <div class="case-layout">
+        <div class="case-meta-panel">
+          <div class="case-year">2011</div>
+          <div class="case-org">RSA Security</div>
+          <div class="case-type-tag human" style="margin-top:8px;">Falha Humana</div>
+          <hr style="border-color:var(--line); margin:18px 0;">
+          <p style="font-size:.8rem; color:var(--dim); line-height:1.55;">
+            <strong style="color:var(--text); display:block; margin-bottom:4px;">Técnica</strong>
+            Phishing com exploit zero-day embutido em planilha Excel
+          </p>
+          <p style="font-size:.8rem; color:var(--dim); line-height:1.55; margin-top:12px;">
+            <strong style="color:var(--text); display:block; margin-bottom:4px;">Gatilho</strong>
+            Curiosidade: "2011 Recruitment Plan.xls"
+          </p>
+          <p style="font-size:.8rem; color:var(--dim); line-height:1.55; margin-top:12px;">
+            <strong style="color:var(--text); display:block; margin-bottom:4px;">Impacto</strong>
+            40 milhões de tokens SecurID comprometidos
+          </p>
+        </div>
+        <div class="case-content-panel">
+          <div class="case-desc-card">
+            <div class="label">O que aconteceu</div>
+            <p>Um funcionário da RSA Security recebeu um e-mail com assunto "2011 Recruitment Plan.xls". O arquivo tinha chegado à pasta de spam, mas a curiosidade falou mais alto. Ao habilitar o conteúdo ativo, uma vulnerabilidade zero-day no Adobe Flash foi explorada, instalando um backdoor. Os invasores, que trabalhavam em turnos com horários de escritório, roubaram dados que comprometeram os tokens SecurID usados para proteger redes militares e governamentais americanas.</p>
+          </div>
+          <div class="lessons-card">
+            <div class="label">Lições</div>
+            <ul>
+              <li>O próprio sistema de e-mail havia sinalizado a mensagem como suspeita — o erro foi confiar na curiosidade.</li>
+              <li>Avisos de "habilitar edição" existem justamente para esse cenário: um documento comum não precisa disso.</li>
+              <li>Um único clique, mesmo de um funcionário sem acesso privilegiado, pode abrir caminho para toda a rede.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         SLIDE 6 — TWITTER 2020
+    ══════════════════════════════════════════════ -->
+    <div class="slide" id="s6">
+      <div class="case-layout">
+        <div class="case-meta-panel">
+          <div class="case-year">2020</div>
+          <div class="case-org">Twitter</div>
+          <div class="case-type-tag human" style="margin-top:8px;">Falha Humana</div>
+          <hr style="border-color:var(--line); margin:18px 0;">
+          <p style="font-size:.8rem; color:var(--dim); line-height:1.55;">
+            <strong style="color:var(--text); display:block; margin-bottom:4px;">Técnica</strong>
+            Vishing (ligação falsa de TI) + página de login clonada
+          </p>
+          <p style="font-size:.8rem; color:var(--dim); line-height:1.55; margin-top:12px;">
+            <strong style="color:var(--text); display:block; margin-bottom:4px;">Gatilho</strong>
+            Autoridade + urgência + contexto real (problemas de VPN)
+          </p>
+          <p style="font-size:.8rem; color:var(--dim); line-height:1.55; margin-top:12px;">
+            <strong style="color:var(--text); display:block; margin-bottom:4px;">Impacto</strong>
+            130 contas alvo · US$ 100k em fraude de bitcoin em poucas horas
+          </p>
+        </div>
+        <div class="case-content-panel">
+          <div class="case-desc-card">
+            <div class="label">O que aconteceu</div>
+            <p>Usando informações verídicas sobre problemas reais de VPN durante a pandemia, atacantes convenceram por telefone funcionários do suporte a fornecer credenciais em uma página falsa (domínio: "twiiter-sso-verify.com"). Com o acesso inicial, identificaram colegas com permissão para a ferramenta interna de suporte a contas e repetiram o ataque. Obama, Elon Musk, Kanye West e Apple foram usados para promover uma fraude de bitcoin.</p>
+          </div>
+          <div class="lessons-card">
+            <div class="label">Lições</div>
+            <ul>
+              <li>Um pretexto crível não precisa ser elaborado: basta mencionar um problema real que a vítima já vive.</li>
+              <li>Uma vez dentro, os atacantes usam o primeiro acesso para localizar quem tem permissões maiores.</li>
+              <li>Um chamado legítimo de TI pode esperar minutos para reconfirmação; um golpe não pode.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         SLIDE 7 — COLONIAL PIPELINE
+    ══════════════════════════════════════════════ -->
+    <div class="slide" id="s7">
+      <div class="case-layout">
+        <div class="case-meta-panel">
+          <div class="case-year">2021</div>
+          <div class="case-org">Colonial Pipeline</div>
+          <div class="case-type-tag tech" style="margin-top:8px;">Falha Técnica</div>
+          <hr style="border-color:var(--line); margin:18px 0;">
+          <p style="font-size:.8rem; color:var(--dim); line-height:1.55;">
+            <strong style="color:var(--text); display:block; margin-bottom:4px;">Técnica</strong>
+            Conta VPN legada ativa, sem uso e sem autenticação em duas etapas
+          </p>
+          <p style="font-size:.8rem; color:var(--dim); line-height:1.55; margin-top:12px;">
+            <strong style="color:var(--text); display:block; margin-bottom:4px;">Grupo</strong>
+            DarkSide (ransomware-as-a-service)
+          </p>
+          <p style="font-size:.8rem; color:var(--dim); line-height:1.55; margin-top:12px;">
+            <strong style="color:var(--text); display:block; margin-bottom:4px;">Impacto</strong>
+            45% do combustível do leste dos EUA · US$ 4,4 mi em resgate
+          </p>
+        </div>
+        <div class="case-content-panel">
+          <div class="case-desc-card">
+            <div class="label">O que aconteceu</div>
+            <p>A senha da conta VPN legada foi encontrada em um dump de vazamento anterior na dark web. A conta não tinha autenticação em duas etapas e ninguém sabia que ainda estava ativa. Os atacantes entraram silenciosamente, mapearam a rede e instalaram o ransomware DarkSide. A Colonial preferiu pagar os US$ 4,4 milhões a arriscar continuar sem operação — o FBI depois recuperou parte do valor rastreando a carteira de criptomoedas.</p>
+          </div>
+          <div class="lessons-card">
+            <div class="label">Lições</div>
+            <ul>
+              <li>Contas legadas sem uso ativo são vetores de entrada que passam despercebidos em auditorias superficiais.</li>
+              <li>2FA em acessos remotos não é opcional — é a diferença entre uma conta comprometida e uma rede comprometida.</li>
+              <li>Senhas reutilizadas ou vazadas anteriormente são a base de muitos acessos não autorizados bem-sucedidos.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         SLIDE 8 — EQUIFAX
+    ══════════════════════════════════════════════ -->
+    <div class="slide" id="s8">
+      <div class="case-layout">
+        <div class="case-meta-panel">
+          <div class="case-year">2017</div>
+          <div class="case-org">Equifax</div>
+          <div class="case-type-tag tech" style="margin-top:8px;">Falha Técnica</div>
+          <hr style="border-color:var(--line); margin:18px 0;">
+          <p style="font-size:.8rem; color:var(--dim); line-height:1.55;">
+            <strong style="color:var(--text); display:block; margin-bottom:4px;">Técnica</strong>
+            Apache Struts CVE-2017-5638 · Patch disponível, não aplicado
+          </p>
+          <p style="font-size:.8rem; color:var(--dim); line-height:1.55; margin-top:12px;">
+            <strong style="color:var(--text); display:block; margin-bottom:4px;">Janela de exposição</strong>
+            9 semanas entre correção disponível e descoberta da invasão
+          </p>
+          <p style="font-size:.8rem; color:var(--dim); line-height:1.55; margin-top:12px;">
+            <strong style="color:var(--text); display:block; margin-bottom:4px;">Impacto</strong>
+            147 milhões de pessoas · Multa de US$ 575 mi
+          </p>
+        </div>
+        <div class="case-content-panel">
+          <div class="case-desc-card">
+            <div class="label">O que aconteceu</div>
+            <p>A Apache divulgou e corrigiu a vulnerabilidade CVE-2017-5638 em março de 2017. A Equifax não aplicou o patch. Em maio, atacantes exploraram a falha para acessar os servidores de um portal de disputas de consumidores. Durante 78 dias, extraíram dados pessoais de 147 milhões de americanos — incluindo números de seguro social, datas de nascimento e endereços — sem que ninguém percebesse.</p>
+          </div>
+          <div class="lessons-card">
+            <div class="label">Lições</div>
+            <ul>
+              <li>9 semanas com uma vulnerabilidade crítica conhecida e sem patch é tempo suficiente para um ataque completo.</li>
+              <li>Processos de gerenciamento de patches precisam de SLAs claros, especialmente para vulnerabilidades críticas.</li>
+              <li>Visibilidade insuficiente da infraestrutura deixou a invasão sem detecção por quase 3 meses.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         SLIDE 9 — CAPITAL ONE
+    ══════════════════════════════════════════════ -->
+    <div class="slide" id="s9">
+      <div class="case-layout">
+        <div class="case-meta-panel">
+          <div class="case-year">2019</div>
+          <div class="case-org">Capital One</div>
+          <div class="case-type-tag tech" style="margin-top:8px;">Falha Técnica</div>
+          <hr style="border-color:var(--line); margin:18px 0;">
+          <p style="font-size:.8rem; color:var(--dim); line-height:1.55;">
+            <strong style="color:var(--text); display:block; margin-bottom:4px;">Técnica</strong>
+            SSRF (Server-Side Request Forgery) + permissões excessivas no firewall da AWS
+          </p>
+          <p style="font-size:.8rem; color:var(--dim); line-height:1.55; margin-top:12px;">
+            <strong style="color:var(--text); display:block; margin-bottom:4px;">Agente</strong>
+            Ex-engenheira de nuvem da própria AWS
+          </p>
+          <p style="font-size:.8rem; color:var(--dim); line-height:1.55; margin-top:12px;">
+            <strong style="color:var(--text); display:block; margin-bottom:4px;">Impacto</strong>
+            106 milhões de clientes · Multa de US$ 80 mi
+          </p>
+        </div>
+        <div class="case-content-panel">
+          <div class="case-desc-card">
+            <div class="label">O que aconteceu</div>
+            <p>Um Web Application Firewall mal configurado permitia requisições SSRF — ou seja, o servidor fazia requisições internas em nome de quem atacava. A atacante usou isso para acessar o serviço de metadados da AWS EC2 e obter credenciais temporárias com permissões excessivas. Essas permissões davam acesso de leitura a mais de 700 buckets S3, onde estavam os dados de 106 milhões de clientes americanos e canadenses.</p>
+          </div>
+          <div class="lessons-card">
+            <div class="label">Lições</div>
+            <ul>
+              <li>SSRF combinado com permissões excessivas transforma uma configuração incorreta em um vazamento catastrófico.</li>
+              <li>Princípio do menor privilégio: cada serviço deve ter acesso apenas ao que precisa para funcionar.</li>
+              <li>IMDSv2 na AWS exige token adicional para acessar metadados — medida que teria impedido esse ataque.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         SLIDE 10 — 0KTAPUS / TWILIO
+    ══════════════════════════════════════════════ -->
+    <div class="slide" id="s10">
+      <div class="case-layout">
+        <div class="case-meta-panel">
+          <div class="case-year">2022</div>
+          <div class="case-org">Twilio · 0ktapus</div>
+          <div class="case-type-tag human" style="margin-top:8px;">Falha Humana</div>
+          <hr style="border-color:var(--line); margin:18px 0;">
+          <p style="font-size:.8rem; color:var(--dim); line-height:1.55;">
+            <strong style="color:var(--text); display:block; margin-bottom:4px;">Técnica</strong>
+            Smishing + páginas de login clonadas + interceptação de OTP em tempo real
+          </p>
+          <p style="font-size:.8rem; color:var(--dim); line-height:1.55; margin-top:12px;">
+            <strong style="color:var(--text); display:block; margin-bottom:4px;">Escala</strong>
+            + 130 empresas atingidas · Twilio, DoorDash, Mailchimp
+          </p>
+          <p style="font-size:.8rem; color:var(--dim); line-height:1.55; margin-top:12px;">
+            <strong style="color:var(--text); display:block; margin-bottom:4px;">Cloudflare</strong>
+            Não comprometida graças a chaves FIDO2 físicas
+          </p>
+        </div>
+        <div class="case-content-panel">
+          <div class="case-desc-card">
+            <div class="label">O que aconteceu</div>
+            <p>Funcionários recebiam SMS urgentes: "Sua senha corporativa expira hoje." O link levava a uma página idêntica à do sistema real, hospedada em domínio registrado minutos antes do disparo. Os dados digitados eram retransmitidos em tempo real para os atacantes, que os usavam imediatamente para autenticar no sistema real — antes mesmo do código OTP de 30 segundos expirar. O código SMS deixou de ser uma barreira eficaz.</p>
+          </div>
+          <div class="lessons-card">
+            <div class="label">Lições</div>
+            <ul>
+              <li>Codes OTP por SMS não protegem contra golpes que os interceptam em tempo real.</li>
+              <li>Chaves físicas FIDO2 não autenticam em domínios falsos — a Cloudflare recebeu os mesmos SMS e não foi comprometida.</li>
+              <li>A defesa mais eficaz não depende do julgamento humano no momento do ataque.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         SLIDE 11 — GATILHOS PSICOLÓGICOS
+    ══════════════════════════════════════════════ -->
+    <div class="slide" id="s11">
+      <div class="slide-inner">
+        <div class="slide-head">
+          <div class="eyebrow">Psicologia da Persuasão</div>
+          <h2 class="slide-title" style="font-size:clamp(1.8rem,3.5vw,2.6rem);">Os gatilhos <em>por trás</em> de cada decisão</h2>
+          <p class="slide-sub" style="margin-top:8px; font-size:.86rem;">Baseados nos princípios de Robert Cialdini — aplicados contra a vítima em vez de a favor dela.</p>
+        </div>
+        <div class="principles-list">
+          <div class="principle-item human">
+            <div class="pi-num">01</div>
+            <div class="pi-body">
+              <div class="pi-name">Autoridade <span class="pi-badge human">Humano</span></div>
+              <div class="pi-ex">"Aqui é do suporte de TI" — ataque ao Twitter, 2020</div>
+            </div>
+          </div>
+          <div class="principle-item human">
+            <div class="pi-num">02</div>
+            <div class="pi-body">
+              <div class="pi-name">Urgência e Escassez <span class="pi-badge human">Humano</span></div>
+              <div class="pi-ex">"Sua senha expira hoje" — campanha 0ktapus, 2022</div>
+            </div>
+          </div>
+          <div class="principle-item human">
+            <div class="pi-num">03</div>
+            <div class="pi-body">
+              <div class="pi-name">Curiosidade <span class="pi-badge human">Humano</span></div>
+              <div class="pi-ex">"2011 Recruitment Plan.xls" — RSA Security, 2011</div>
+            </div>
+          </div>
+          <div class="principle-item tech">
+            <div class="pi-num">04</div>
+            <div class="pi-body">
+              <div class="pi-name">Complacência Técnica <span class="pi-badge tech">Técnico</span></div>
+              <div class="pi-ex">Correção disponível e não aplicada por semanas — Equifax, 2017 · TalkTalk, 2015</div>
+            </div>
+          </div>
+          <div class="principle-item tech">
+            <div class="pi-num">05</div>
+            <div class="pi-body">
+              <div class="pi-name">Excesso de Permissão <span class="pi-badge tech">Técnico</span></div>
+              <div class="pi-ex">Firewall com leitura em centenas de áreas de armazenamento — Capital One, 2019</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         SLIDE 12 — NÚMEROS DO SIMULADOR
+    ══════════════════════════════════════════════ -->
+    <div class="slide" id="s12">
+      <div class="slide-inner">
+        <div class="slide-head" style="text-align:center;">
+          <div class="eyebrow" style="justify-content:center;">O Simulador</div>
+          <h2 class="slide-title" style="font-size:clamp(2rem,4vw,3rem);">O que está <em>incluso</em></h2>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-n">10</div>
+            <div class="stat-l">Cenários interativos únicos</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-n">6</div>
+            <div class="stat-l">Casos reais documentados</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-n">2</div>
+            <div class="stat-l">Cenários na perspectiva do atacante</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-n">1</div>
+            <div class="stat-l">Painel SOC do analista de segurança</div>
+          </div>
+        </div>
+        <div class="sim-feature-grid" style="margin-top:14px;">
+          <div class="sim-feat">
+            <div class="fi">📧</div>
+            <h5>Cliente de e-mail simulado</h5>
+            <p>Phishing com anexo interativo e cabeçalhos de e-mail reais</p>
+          </div>
+          <div class="sim-feat">
+            <div class="fi">📱</div>
+            <h5>SMS e tela de ligação</h5>
+            <p>Simulação de smishing e vishing com transcrição interativa</p>
+          </div>
+          <div class="sim-feat">
+            <div class="fi">💻</div>
+            <h5>Terminal de acesso remoto</h5>
+            <p>Auditoria de contas VPN e simulação de ransomware</p>
+          </div>
+          <div class="sim-feat">
+            <div class="fi">🔐</div>
+            <h5>Formulário SQL Injection</h5>
+            <p>Execute a injeção real e veja os dados vazarem na tela</p>
+          </div>
+          <div class="sim-feat">
+            <div class="fi">🔑</div>
+            <h5>Estimador de senhas</h5>
+            <p>Calcula tempo de quebra por força bruta em tempo real</p>
+          </div>
+          <div class="sim-feat">
+            <div class="fi">🎯</div>
+            <h5>Quiz de avaliação</h5>
+            <p>16 perguntas sobre os incidentes com certificado de participação</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         SLIDE 13 — BOAS PRÁTICAS / CONCLUSÃO
+    ══════════════════════════════════════════════ -->
+    <div class="slide" id="s13">
+      <div class="slide-inner">
+        <div class="slide-head">
+          <div class="eyebrow">Conclusão</div>
+          <h2 class="slide-title" style="font-size:clamp(2rem,4vw,3rem);">O que <em>os casos ensinaram</em></h2>
+        </div>
+        <div class="conclusion-card">
+          <ol class="conclusion-list">
+            <li>
+              <span class="cl-num">1</span>
+              <span><strong style="color:var(--text);">Verifique antes de agir.</strong> Qualquer pedido urgente de credenciais deve ser confirmado por um canal independente — não o fornecido por quem pediu.</span>
+            </li>
+            <li>
+              <span class="cl-num">2</span>
+              <span><strong style="color:var(--text);">Patches não são opcionais.</strong> Vulnerabilidades conhecidas com correção disponível precisam de SLA claro — semanas são tempo demais.</span>
+            </li>
+            <li>
+              <span class="cl-num">3</span>
+              <span><strong style="color:var(--text);">Princípio do menor privilégio.</strong> Contas e serviços devem ter acesso apenas ao que precisam — permissões excessivas multiplicam o impacto de qualquer falha.</span>
+            </li>
+            <li>
+              <span class="cl-num">4</span>
+              <span><strong style="color:var(--text);">2FA ≠ invulnerável.</strong> OTP por SMS pode ser interceptado em tempo real. Chaves físicas FIDO2 são a defesa mais confiável contra phishing moderno.</span>
+            </li>
+            <li>
+              <span class="cl-num">5</span>
+              <span><strong style="color:var(--text);">Infraestrutura herdada é ponto cego.</strong> Contas e páginas sem uso ativo continuam sendo superfícies de ataque enquanto existirem.</span>
+            </li>
+            <li>
+              <span class="cl-num">6</span>
+              <span><strong style="color:var(--text);">Conhecer os gatilhos é a primeira defesa.</strong> Autoridade, urgência e curiosidade são explorados de forma sistemática — reconhecê-los no momento certo é o que separa a vítima do sobrevivente.</span>
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         SLIDE 14 — FINAL / SIMULADOR
+    ══════════════════════════════════════════════ -->
+    <div class="slide" id="s14">
+      <div style="text-align:center; max-width:760px; width:100%;">
+        <div class="eyebrow" style="justify-content:center;">Simulador Interativo</div>
+        <h2 class="slide-title" style="font-size:clamp(2.4rem,5vw,4rem); margin-bottom:20px;">
+          Agora é a sua vez<br>de <em>explorar</em>
+        </h2>
+        <p style="color:var(--dim); font-size:1rem; max-width:520px; margin:0 auto 40px; line-height:1.7;">
+          Dez cenários com interfaces únicas. Você vai do papel de vítima ao de atacante — e termina como analista de segurança julgando os alertas de um SOC.
+        </p>
+        <div style="display:flex; gap:14px; justify-content:center; flex-wrap:wrap;">
+          <a href="/simulador" class="sim-cta-btn">
+            <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Abrir o Simulador
+          </a>
+          <a href="/" class="sim-cta-btn" style="background:var(--glass); color:var(--text); border:1px solid var(--gbrd); box-shadow:none;">
+            <svg viewBox="0 0 24 24" style="stroke:var(--text);"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Página de Apresentação
+          </a>
+        </div>
+        <p style="font-size:.76rem; color:var(--muted); margin-top:48px;">
+          Segurança de Sistemas Computacionais · <script>document.write(new Date().getFullYear())</script>
+        </p>
+      </div>
+    </div>
+
+  </div><!-- /slides-viewport -->
+</div><!-- /deck -->
+
+<!-- Bottom Nav -->
+<div id="bottom-nav">
+  <button class="nav-btn" id="prevBtn" aria-label="Anterior" disabled>
+    <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+  </button>
+  <div class="dots-wrap" id="dotsWrap"></div>
+  <button class="nav-btn" id="nextBtn" aria-label="Próximo">
+    <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+  </button>
+</div>
+
+<script>
+(function(){
+  const slides = document.querySelectorAll('.slide');
+  const total  = slides.length;
+  const curEl  = document.getElementById('cur');
+  const totEl  = document.getElementById('tot');
+  const bar    = document.getElementById('progress-bar');
+  const prevBtn= document.getElementById('prevBtn');
+  const nextBtn= document.getElementById('nextBtn');
+  const dotsWrap = document.getElementById('dotsWrap');
+
+  totEl.textContent = total;
+
+  // Build dots
+  for(let i=0;i<total;i++){
+    const d = document.createElement('div');
+    d.className = 'dot' + (i===0?' active':'');
+    d.addEventListener('click', ()=>goTo(i));
+    dotsWrap.appendChild(d);
+  }
+  const dots = dotsWrap.querySelectorAll('.dot');
+
+  let current = 0;
+  let animating = false;
+
+  function goTo(idx){
+    if(animating || idx===current || idx<0 || idx>=total) return;
+    animating = true;
+
+    const oldSlide = slides[current];
+    const newSlide = slides[idx];
+    const dir = idx > current ? 1 : -1;
+
+    // Mark old as prev
+    oldSlide.classList.remove('active');
+    oldSlide.classList.add('prev');
+
+    // Position new slide off-screen in the direction of travel
+    newSlide.style.transform = `translateX(${dir * 60}px)`;
+    newSlide.style.opacity = '0';
+    newSlide.style.pointerEvents = 'none';
+    newSlide.classList.remove('prev');
+
+    // Force reflow
+    void newSlide.offsetWidth;
+
+    // Animate in
+    newSlide.classList.add('active');
+    newSlide.style.transform = '';
+    newSlide.style.opacity = '';
+    newSlide.style.pointerEvents = '';
+
+    // Clean up old after transition
+    setTimeout(()=>{
+      oldSlide.classList.remove('prev');
+      oldSlide.style.transform = '';
+      animating = false;
+    }, 480);
+
+    current = idx;
+    update();
+  }
+
+  function update(){
+    curEl.textContent = current + 1;
+    // progress bar
+    bar.style.width = ((current + 1) / total * 100) + '%';
+    // dots
+    dots.forEach((d,i) => d.classList.toggle('active', i===current));
+    // buttons
+    prevBtn.disabled = current === 0;
+    nextBtn.disabled = current === total - 1;
+  }
+
+  prevBtn.addEventListener('click', ()=>goTo(current - 1));
+  nextBtn.addEventListener('click', ()=>goTo(current + 1));
+
+  // Keyboard
+  document.addEventListener('keydown', e=>{
+    if(e.key==='ArrowRight' || e.key==='ArrowDown' || e.key===' ') {
+      e.preventDefault(); goTo(current + 1);
+    } else if(e.key==='ArrowLeft' || e.key==='ArrowUp') {
+      e.preventDefault(); goTo(current - 1);
+    } else if(e.key==='f' || e.key==='F') {
+      if(!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+      else document.exitFullscreen?.();
+    } else if(e.key==='Home') {
+      goTo(0);
+    } else if(e.key==='End') {
+      goTo(total - 1);
+    }
+  });
+
+  // Touch swipe
+  let touchX = 0;
+  document.addEventListener('touchstart', e=>{ touchX = e.touches[0].clientX; }, {passive:true});
+  document.addEventListener('touchend', e=>{
+    const diff = touchX - e.changedTouches[0].clientX;
+    if(Math.abs(diff) > 50){
+      if(diff > 0) goTo(current + 1);
+      else goTo(current - 1);
+    }
+  });
+
+  // Init
+  update();
+})();
+</script>
+</body>
+</html>
